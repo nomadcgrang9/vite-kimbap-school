@@ -216,10 +216,7 @@ export async function updateAdminSession(sessionId: string, updates: {
     
     const { error } = await supabase
       .from('sessions')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
+      .update(updates)
       .eq('id', sessionId);
       
     if (error) {
