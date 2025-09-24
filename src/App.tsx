@@ -16,11 +16,13 @@ import AdminStudentTest from './components/AdminStudentTest'
 import DirectAdminStudentTest from './components/DirectAdminStudentTest'
 import DirectAdminAssignmentTest from './components/DirectAdminAssignmentTest'
 import AdminRoleModal from './components/AdminRoleModal'
+import MainPage from './pages/MainPage'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
   const [utilsTestResults, setUtilsTestResults] = useState<any>(null)
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false)
+  const [showMainPage, setShowMainPage] = useState(false)
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -34,6 +36,11 @@ function App() {
     
     checkConnection()
   }, [])
+
+  // MainPage 모드일 때는 테스트 컴포넌트들 대신 메인 페이지 표시
+  if (showMainPage) {
+    return <MainPage />
+  }
 
   return (
     <>
@@ -164,6 +171,43 @@ function App() {
         {/* Step 3B.1c Test Component */}
         <DirectAdminAssignmentTest />
 
+        {/* Phase 4: Main Page Integration Test */}
+        <div style={{ 
+          marginTop: '30px', 
+          padding: '20px', 
+          border: '2px solid #28a745', 
+          borderRadius: '8px',
+          backgroundColor: '#f8fff9'
+        }}>
+          <h3 style={{ color: '#28a745', marginBottom: '15px' }}>
+            🎯 Phase 4: 메인 페이지 통합 (크롬북 13인치 최적화)
+          </h3>
+          <p style={{ marginBottom: '15px' }}>
+            원본 index.html의 레이아웃을 완전 보존한 React 메인 페이지
+          </p>
+          <button
+            onClick={() => setShowMainPage(true)}
+            style={{
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              marginRight: '10px'
+            }}
+            onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#218838'}
+            onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#28a745'}
+          >
+            🚀 메인 페이지 실행
+          </button>
+          <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+            📱 크롬북 13인치 최적화: 타이머 + 로그인 + 돌림판 3분할 레이아웃
+          </div>
+        </div>
+
         {/* Step 3B.2a: Admin UI Component Test */}
         <div style={{ 
           marginTop: '30px', 
@@ -173,7 +217,7 @@ function App() {
           backgroundColor: '#f8f9ff'
         }}>
           <h3 style={{ color: '#007bff', marginBottom: '15px' }}>
-            🔄 Phase 3B.2a: Admin UI Component Migration Test
+            ✅ Phase 3B.2a: Admin UI Component Migration Test (완료)
           </h3>
           <p style={{ marginBottom: '15px' }}>
             AdminRoleModal 컴포넌트 통합 테스트 - 관리자 역할 관리 모달 UI
