@@ -4,8 +4,9 @@
  * 원본: admin-rolesv2.js editSession()
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { AdminSession } from '../services/adminSessionService';
+import { updateAdminSession } from '../services/adminSessionService';
 
 interface EditSessionModalProps {
   session: AdminSession;
@@ -19,6 +20,12 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
   
   // 역할 관리 상태
   const [missions, setMissions] = useState(session.parsedMissions || []);
+  
+  // 폼 데이터 ref들
+  const sessionNameRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const targetClassRef = useRef<HTMLSelectElement>(null);
+  const statusRef = useRef<HTMLSelectElement>(null);
   
   // ============ 역할 관리 함수들 ============
   
@@ -77,6 +84,56 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
     );
     setMissions(updatedMissions);
   };
+
+  // ============ 세션 저장 함수 ============
+  
+  const submitEditSession = async () => {
+    console.log('💾 [EditSessionModal] 세션 저장 시작');
+    
+    // 폼 데이터 수집
+    const sessionName = sessionNameRef.current?.value || session.name;
+    const description = descriptionRef.current?.value || '';
+    const targetClass = targetClassRef.current?.value || '전체';
+    const status = statusRef.current?.value || 'active';
+    
+    // 역할 데이터를 JSON 문자열로 변환
+    const missionsJson = JSON.stringify(missions);
+    
+    console.log('📋 [EditSessionModal] 저장할 데이터:', {
+      sessionName,
+      description,
+      targetClass,
+      status,
+      missionsCount: missions.length
+    });
+    
+    try {
+      const updates = {
+        name: sessionName,
+        activity_instructions: description,
+        target_class: targetClass,
+        status: status,
+        missions: missionsJson
+      };
+      
+      console.log('🔄 [EditSessionModal] updateAdminSession 호출 중...');
+      const result = await updateAdminSession(session.id, updates);
+      
+      if (result.success) {
+        console.log('✅ [EditSessionModal] 세션 저장 성공');
+        alert(`세션 "${sessionName}" 저장이 완료되었습니다.`);
+        onSave(); // 부모 컴포넌트 데이터 새로고침
+        onClose(); // 모달 닫기
+      } else {
+        console.error('❌ [EditSessionModal] 세션 저장 실패:', result.message);
+        alert(`세션 저장 실패: ${result.message}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ [EditSessionModal] 세션 저장 오류:', error);
+      alert('세션 저장 중 오류가 발생했습니다.');
+    }
+  };
   
   if (!isOpen) return null;
 
@@ -109,6 +166,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">세션 이름 *</label>
                 <input 
+                  ref={sessionNameRef}
                   type="text" 
                   defaultValue={session.session_name || session.name}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -118,6 +176,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">활동 설명</label>
                 <textarea 
+                  ref={descriptionRef}
                   rows={4}
                   defaultValue={session.description || session.activity_instructions || ''}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -127,6 +186,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">대상 클래스</label>
                 <select 
+                  ref={targetClassRef}
                   defaultValue={session.target_class || '전체'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -143,6 +203,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
                 <select 
+                  ref={statusRef}
                   defaultValue={session.is_active || (session.status === 'active') ? 'active' : 'inactive'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -218,12 +279,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
             </button>
             <button 
               type="button"
-              onClick={() => {
-                console.log('💾 [EditSessionModal] 저장 버튼 클릭');
-                // TODO: 실제 저장 로직 구현
-                onSave();
-                onClose();
-              }}
+              onClick={submitEditSession}
               className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
             >
               <i className="fas fa-save mr-2"></i>저장

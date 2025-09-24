@@ -145,7 +145,8 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
   // ============ 세션 편집 관련 함수들 ============
   
   const handleEditSession = (sessionId: string) => {
-    console.log('✏️ [AdminRoleModal] 세션 편집 시작:', sessionId);
+    console.log('✏️ [AdminRoleModal] handleEditSession 함수 시작:', sessionId);
+    console.log('🔍 [AdminRoleModal] 현재 상태 - isEditModalOpen:', isEditModalOpen);
     console.log('🔍 [AdminRoleModal] 전체 sessions 배열:', sessions);
     console.log('🔍 [AdminRoleModal] sessions 배열 길이:', sessions.length);
     
@@ -161,9 +162,11 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
     console.log('🔍 [AdminRoleModal] 찾은 세션 객체:', session);
     console.log('🔍 [AdminRoleModal] 세션 객체 키들:', Object.keys(session));
     
+    console.log('📝 [AdminRoleModal] setEditingSession 호출 중...');
     setEditingSession(session);
+    console.log('🚪 [AdminRoleModal] setIsEditModalOpen(true) 호출 중...');
     setIsEditModalOpen(true);
-    console.log('✅ [AdminRoleModal] 편집 모달 열림:', session.session_name || session.name);
+    console.log('✅ [AdminRoleModal] 편집 모달 상태 변경 완료:', session.session_name || session.name);
   };
 
   const handleCloseEditModal = () => {
@@ -173,7 +176,7 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    console.log('🗑️ [AdminRoleModal] 세션 삭제 시작:', sessionId);
+    console.log('🗑️ [AdminRoleModal] handleDeleteSession 함수 시작:', sessionId);
     
     const session = sessions.find(s => s.id === sessionId);
     if (!session) {
@@ -182,6 +185,7 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
       return;
     }
     
+    console.log('❓ [AdminRoleModal] 삭제 확인 dialog 표시 중...');
     const confirmed = window.confirm(
       `정말 "${session.session_name || session.name}" 세션을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
     );
@@ -192,15 +196,16 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
     }
     
     try {
-      console.log('💾 [AdminRoleModal] 세션 삭제 요청 중...');
+      console.log('💾 [AdminRoleModal] deleteAdminSession 서비스 호출 중...');
       const result = await deleteAdminSession(sessionId);
       
       if (result.success) {
         console.log('✅ [AdminRoleModal] 세션 삭제 성공:', result.message);
         alert(`"${session.session_name || session.name}" ${result.message}`);
         
-        // 데이터 새로고침
+        console.log('🔄 [AdminRoleModal] 데이터 새로고침 시작...');
         await loadAllData();
+        console.log('🔄 [AdminRoleModal] 데이터 새로고침 완료');
         
       } else {
         console.error('❌ [AdminRoleModal] 세션 삭제 실패:', result.message);
@@ -390,16 +395,36 @@ function SessionsTab({ sessions, onRefresh, onEditSession, onDeleteSession }: {
                 
                 <div className="flex space-x-2">
                   <button 
-                    onClick={() => onEditSession(session.id)}
+                    onClick={(e) => {
+                      console.log('🖱️ [SessionsTab] 수정 버튼 클릭됨 - 세션 ID:', session.id);
+                      console.log('🖱️ [SessionsTab] onEditSession 함수:', typeof onEditSession);
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEditSession(session.id);
+                    }}
                     className="text-blue-500 hover:text-blue-600 px-3 py-1 transition-colors"
                   >
                     <i className="fas fa-edit mr-1"></i>수정
                   </button>
-                  <button className="text-purple-500 hover:text-purple-600 px-3 py-1">
+                  <button 
+                    onClick={(e) => {
+                      console.log('🖱️ [SessionsTab] 배정 버튼 클릭됨 - 세션 ID:', session.id);
+                      e.preventDefault();
+                      e.stopPropagation();
+                      alert(`${session.session_name || session.name} 세션의 배정 기능은 곧 구현될 예정입니다.`);
+                    }}
+                    className="text-purple-500 hover:text-purple-600 px-3 py-1 transition-colors"
+                  >
                     <i className="fas fa-user-plus mr-1"></i>배정
                   </button>
                   <button 
-                    onClick={() => onDeleteSession(session.id)}
+                    onClick={(e) => {
+                      console.log('🖱️ [SessionsTab] 삭제 버튼 클릭됨 - 세션 ID:', session.id);
+                      console.log('🖱️ [SessionsTab] onDeleteSession 함수:', typeof onDeleteSession);
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeleteSession(session.id);
+                    }}
                     className="text-red-500 hover:text-red-600 px-3 py-1 transition-colors"
                   >
                     <i className="fas fa-trash mr-1"></i>삭제

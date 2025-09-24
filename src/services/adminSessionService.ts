@@ -191,6 +191,59 @@ export function filterSessionsByClass(sessions: AdminSession[], targetClass: str
   );
 }
 
+// ============ 세션 업데이트 함수 ============
+
+export async function updateAdminSession(sessionId: string, updates: {
+  name?: string;
+  activity_instructions?: string;
+  target_class?: string;
+  status?: string;
+  missions?: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  error?: any;
+}> {
+  console.log('📝 [AdminSessionService] 세션 업데이트 시작:', sessionId, updates);
+  
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase 클라이언트 초기화 실패');
+    }
+
+    console.log('💾 [AdminSessionService] Supabase에서 세션 업데이트 중...');
+    
+    const { error } = await supabase
+      .from('sessions')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionId);
+      
+    if (error) {
+      console.error('❌ [AdminSessionService] 세션 업데이트 실패:', error);
+      throw new Error(`세션 업데이트 실패: ${error.message}`);
+    }
+    
+    console.log('✅ [AdminSessionService] 세션 업데이트 성공');
+    
+    return {
+      success: true,
+      message: '세션이 성공적으로 업데이트되었습니다.'
+    };
+    
+  } catch (error) {
+    console.error('❌ [AdminSessionService] 세션 업데이트 오류:', error);
+    return {
+      success: false,
+      message: '세션 업데이트 중 오류가 발생했습니다.',
+      error
+    };
+  }
+}
+
 // ============ 세션 삭제 함수 ============
 
 export async function deleteAdminSession(sessionId: string): Promise<{
