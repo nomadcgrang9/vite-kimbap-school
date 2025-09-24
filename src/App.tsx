@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { testSupabaseConnection } from './lib/supabase'
+import { runStudentUtilsTests } from './utils/__tests__/studentUtils.test'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
+  const [utilsTestResults, setUtilsTestResults] = useState<any>(null)
 
   useEffect(() => {
     const checkConnection = async () => {
       const isConnected = await testSupabaseConnection()
       setConnectionStatus(isConnected ? 'connected' : 'failed')
     }
+    
+    // Run utility function tests
+    const testResults = runStudentUtilsTests()
+    setUtilsTestResults(testResults)
     
     checkConnection()
   }, [])
@@ -56,11 +62,46 @@ function App() {
           )}
         </div>
         
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '15px', 
+          border: '1px solid #ddd', 
+          borderRadius: '8px' 
+        }}>
+          <h4>Phase 1.2: First Utility Migration Test</h4>
+          {utilsTestResults && (
+            <div>
+              <p><strong>Student Utils Test Results:</strong></p>
+              <div style={{ 
+                backgroundColor: utilsTestResults.allPassed ? '#d4edda' : '#f8d7da',
+                color: utilsTestResults.allPassed ? '#155724' : '#721c24',
+                padding: '10px',
+                borderRadius: '5px',
+                marginBottom: '10px'
+              }}>
+                {utilsTestResults.allPassed ? '✅ All utility tests passed!' : '❌ Some utility tests failed'}
+              </div>
+              <details style={{ fontSize: '14px' }}>
+                <summary>View Test Details</summary>
+                <pre style={{ 
+                  backgroundColor: '#f8f9fa', 
+                  padding: '10px', 
+                  borderRadius: '5px',
+                  fontSize: '12px',
+                  overflow: 'auto'
+                }}>
+                  {JSON.stringify(utilsTestResults, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+        </div>
+
         <div style={{ marginTop: '20px', textAlign: 'left' }}>
           <h4>Migration Plan Status:</h4>
           <ul>
             <li>✅ Phase 1.1: Environment Variables Setup (COMPLETED)</li>
-            <li>⏳ Phase 1.2: Git Initialization & First Utility Migration</li>
+            <li>🔄 Phase 1.2: Git Initialization & First Utility Migration (IN PROGRESS)</li>
             <li>⏳ Phase 2: Core Module Conversion (student.js → modules)</li>
             <li>⏳ Phase 3: Admin Modules Migration</li>
             <li>⏳ Phase 4: Database API Integration</li>
