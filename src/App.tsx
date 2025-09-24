@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import { testSupabaseConnection } from './lib/supabase'
 import { runStudentUtilsTests } from './utils/__tests__/studentUtils.test'
+import SupabaseTest from './components/SupabaseTest'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
@@ -101,13 +102,16 @@ function App() {
           <h4>Migration Plan Status:</h4>
           <ul>
             <li>✅ Phase 1.1: Environment Variables Setup (COMPLETED)</li>
-            <li>🔄 Phase 1.2: Git Initialization & First Utility Migration (IN PROGRESS)</li>
-            <li>⏳ Phase 2: Core Module Conversion (student.js → modules)</li>
+            <li>✅ Phase 1.2: Git Initialization & First Utility Migration (COMPLETED)</li>
+            <li>🔄 Phase 2A: Core Function Migration (student.js → modules)</li>
+            <li>⏳ Phase 2B: Database API Integration</li>
             <li>⏳ Phase 3: Admin Modules Migration</li>
-            <li>⏳ Phase 4: Database API Integration</li>
-            <li>⏳ Phase 5: UI Component Migration</li>
+            <li>⏳ Phase 4: UI Component Migration</li>
           </ul>
         </div>
+
+        {/* Step 2A.1 Test Component */}
+        <SupabaseTest />
       </div>
     </>
   )
