@@ -10,10 +10,17 @@ import AssignmentCheckTest from './components/AssignmentCheckTest'
 import RoleDisplayTest from './components/RoleDisplayTest'
 import IntegratedRoleTest from './components/IntegratedRoleTest'
 import AutoIntegrationTest from './components/AutoIntegrationTest'
+import AdminSessionTest from './components/AdminSessionTest'
+import DirectAdminSessionTest from './components/DirectAdminSessionTest'
+import AdminStudentTest from './components/AdminStudentTest'
+import DirectAdminStudentTest from './components/DirectAdminStudentTest'
+import DirectAdminAssignmentTest from './components/DirectAdminAssignmentTest'
+import AdminRoleModal from './components/AdminRoleModal'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
   const [utilsTestResults, setUtilsTestResults] = useState<any>(null)
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false)
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -113,6 +120,7 @@ function App() {
             <li>✅ Phase 2A: Core Function Migration (student.js → modules)</li>
             <li>✅ Phase 2B: Student Login System Migration</li>
             <li>✅ Phase 3A: Role Display System Migration (COMPLETED)</li>
+            <li>🔄 Phase 3B.2a: Admin UI Component Migration (IN PROGRESS)</li>
             <li>⏳ Phase 4: UI Component Migration</li>
           </ul>
         </div>
@@ -140,6 +148,63 @@ function App() {
 
         {/* Step 3A.3 Auto Integration Test */}
         <AutoIntegrationTest />
+
+        {/* Step 3B.1a Test Component */}
+        <AdminSessionTest />
+        
+        {/* Direct Admin Session Test */}
+        <DirectAdminSessionTest />
+
+        {/* Step 3B.1b Test Component */}
+        <AdminStudentTest />
+
+        {/* Direct Admin Student Test */}
+        <DirectAdminStudentTest />
+
+        {/* Step 3B.1c Test Component */}
+        <DirectAdminAssignmentTest />
+
+        {/* Step 3B.2a: Admin UI Component Test */}
+        <div style={{ 
+          marginTop: '30px', 
+          padding: '20px', 
+          border: '2px solid #007bff', 
+          borderRadius: '8px',
+          backgroundColor: '#f8f9ff'
+        }}>
+          <h3 style={{ color: '#007bff', marginBottom: '15px' }}>
+            🔄 Phase 3B.2a: Admin UI Component Migration Test
+          </h3>
+          <p style={{ marginBottom: '15px' }}>
+            AdminRoleModal 컴포넌트 통합 테스트 - 관리자 역할 관리 모달 UI
+          </p>
+          <button
+            onClick={() => setIsAdminModalOpen(true)}
+            style={{
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+            onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#0056b3'}
+            onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#007bff'}
+          >
+            🚀 관리자 역할 관리 모달 열기
+          </button>
+          <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+            📋 모달에서 세션 관리, 과제 관리, 상태 개요 탭을 테스트할 수 있습니다.
+          </div>
+        </div>
+
+        {/* Admin Role Modal Component */}
+        <AdminRoleModal 
+          isOpen={isAdminModalOpen} 
+          onClose={() => setIsAdminModalOpen(false)} 
+        />
       </div>
     </>
   )
