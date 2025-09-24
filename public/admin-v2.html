@@ -305,7 +305,7 @@
                 }
                 
                 // 이미 로드된 스크립트인지 체크
-                const existingScript = document.querySelector(`script[src="js/admin-${fileName}.js"]`);
+                const existingScript = document.querySelector(`script[src="static/admin-${fileName}.js"]`);
                 if (existingScript) {
                     log(`${moduleName} 모듈 이미 로드됨`);
                     
@@ -336,7 +336,7 @@
                 const script = document.createElement('script');
                 // 캐시 무효화를 위한 타임스탬프 추가 (2025-09-23 수정)
                 const timestamp = Date.now();
-                script.src = `js/admin-${fileName}.js?v=${timestamp}`;
+                script.src = `static/admin-${fileName}.js?v=${timestamp}`;
                 script.onload = () => {
                     log(`${moduleName} 모듈 로드 성공`, 'success');
                     if (statusDiv) {
@@ -378,11 +378,11 @@
                 log('포인트 관리 모듈 로딩 시작');
                 
                 // 스크립트가 이미 로드되어 있는지 확인
-                const existingScript = document.querySelector('script[src="js/admin-points.js"]');
+                const existingScript = document.querySelector('script[src="static/admin-points.js"]');
                 if (!existingScript) {
                     await new Promise((resolve, reject) => {
                         const script = document.createElement('script');
-                        script.src = 'js/admin-points.js';
+                        script.src = 'static/admin-points.js';
                         script.onload = resolve;
                         script.onerror = reject;
                         document.head.appendChild(script);
@@ -425,7 +425,7 @@
                 const existingScript = document.querySelector('script[src*="admin-rolesv2.js"]');
                 if (!existingScript) {
                     const script = document.createElement('script');
-                    script.src = `js/admin-rolesv2.js?v=${Date.now()}`;
+                    script.src = `static/admin-rolesv2.js?v=${Date.now()}`;
                     
                     script.onload = async () => {
                         log('admin-rolesv2.js 로드 성공', 'success');
@@ -499,12 +499,12 @@
                 log('메시지 모듈 로딩 시작');
                 
                 // 스크립트가 이미 로드되어 있는지 확인
-                const existingScript = document.querySelector('script[src="js/admin-messages.js"]');
+                const existingScript = document.querySelector('script[src="static/admin-messages.js"]');
                 if (!existingScript) {
                     // 스크립트 로드
                     await new Promise((resolve, reject) => {
                         const script = document.createElement('script');
-                        script.src = 'js/admin-messages.js';
+                        script.src = 'static/admin-messages.js';
                         script.onload = resolve;
                         script.onerror = reject;
                         document.head.appendChild(script);
@@ -540,12 +540,12 @@
                 log('뽑기 관리 모듈 로딩 시작');
                 
                 // 스크립트가 이미 로드되어 있는지 확인
-                const existingScript = document.querySelector('script[src="js/admin-lucky-draw.js"]');
+                const existingScript = document.querySelector('script[src="static/admin-lucky-draw.js"]');
                 if (!existingScript) {
                     // 스크립트 로드
                     await new Promise((resolve, reject) => {
                         const script = document.createElement('script');
-                        script.src = 'js/admin-lucky-draw.js';
+                        script.src = 'static/admin-lucky-draw.js';
                         script.onload = resolve;
                         script.onerror = reject;
                         document.head.appendChild(script);
@@ -1794,7 +1794,7 @@ repliesList.innerHTML = `
             const isLoggedIn = sessionStorage.getItem('teacherLoggedIn');
             if (!isLoggedIn) {
                 alert('관리자 권한이 필요합니다.');
-                window.location.href = 'original-main.html';
+                window.location.href = 'index.html';
             }
         }
 
@@ -1964,8 +1964,8 @@ repliesList.innerHTML = `
         });
     </script>
     
-    <script src="js/supabase-config.js"></script>
-    <script src="js/supabase-api.js"></script>
+    <script src="static/supabase-config.js"></script>
+    <script src="static/supabase-api.js"></script>
     
     <!-- 전역 함수 등록 (모든 함수 정의 완료 후) -->
     <script>
@@ -1994,11 +1994,11 @@ repliesList.innerHTML = `
     </script>
     
     <!-- 관리자 모듈들 -->
-    <script src="js/api-wrapper.js"></script>
-    <script src="js/admin-students.js"></script>
-    <!-- <script src="js/admin-roles.js"></script> <!-- 구문 오류로 임시 비활성화 --> -->
-    <script src="js/admin-stage-config.js"></script>
-    <script src="js/admin-guides.js"></script>
+    <script src="static/api-wrapper.js"></script>
+    <script src="static/admin-students.js"></script>
+    <!-- <script src="static/admin-roles.js"></script> <!-- 구문 오류로 임시 비활성화 --> -->
+    <script src="static/admin-stage-config.js"></script>
+    <script src="static/admin-guides.js"></script>
     <!-- <script src="test-admin-button.js"></script> -->
 
 </body>

@@ -6,22 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>webapp</title>
     <script>
-      // URL 파라미터로 페이지 선택
-      const urlParams = new URLSearchParams(window.location.search);
-      const page = urlParams.get('page');
-      
-      if (page === 'original') {
-        // 원본 메인 HTML로 리다이렉트
-        window.location.href = '/original-main.html';
-      } else if (page === 'student') {
-        // 학생 페이지로 리다이렉트
-        window.location.href = '/original-student.html';
-      } else if (page === 'admin') {
-        // 관리자 페이지로 리다이렉트
-        window.location.href = '/original-admin.html';
-      } else {
-        // 기본은 React 테스트 페이지
-      }
+      // URL 파라미터로 페이지 선택 - 더 안전한 처리
+      document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page');
+        
+        if (page === 'original') {
+          // 원본 메인 HTML로 리다이렉트
+          window.location.replace('/original-main.html');
+        } else if (page === 'student') {
+          // 학생 페이지로 리다이렉트
+          window.location.replace('/original-student.html');
+        } else if (page === 'admin') {
+          // 관리자 페이지로 리다이렉트
+          window.location.replace('/original-admin.html');
+        }
+        // 파라미터가 없으면 React 테스트 페이지 로드
+      });
     </script>
   </head>
   <body>
