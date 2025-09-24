@@ -12,7 +12,7 @@ class StageConfigManager {
         };
         this.stageIcons = {
             1: "🍙",
-            2: "✨", 
+            2: "🔪", 
             3: "➕"
         };
         this.isLoading = false;
@@ -124,9 +124,8 @@ class StageConfigManager {
                             <thead>
                                 <tr class="bg-gray-100">
                                     <th class="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-700">단계</th>
-                                    <th class="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-700">제목</th>
-                                    <th class="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-700">설명</th>
-                                    <th class="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-700">아이콘</th>
+                                    <th class="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-700" colspan="2">단계 내용 (제목 + 설명)</th>
+                                    <th class="border border-gray-200 px-3 py-2 text-center font-semibold text-gray-700">아이콘</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -166,7 +165,7 @@ class StageConfigManager {
      */
     renderStageRow(stageNum) {
         const stageKey = `stage${stageNum}`;
-        const stageData = this.parseStageData(this.currentConfig[stageKey]);
+        const fullContent = this.currentConfig[stageKey]; // 통합된 내용
         const icon = this.stageIcons[stageNum];
 
         return `
@@ -184,34 +183,28 @@ class StageConfigManager {
                     </div>
                 </td>
                 
-                <!-- 제목 컬럼 -->
-                <td class="border border-gray-200 px-3 py-3">
-                    <input type="text" 
-                           id="title_${stageNum}" 
-                           value="${stageData.title}" 
-                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-transparent"
-                           placeholder="예: 1단계: 김밥말기">
-                    <div class="text-xs text-gray-400 mt-1">현재: ${stageData.title}</div>
-                </td>
-                
-                <!-- 설명 컬럼 -->
-                <td class="border border-gray-200 px-3 py-3">
-                    <input type="text" 
-                           id="description_${stageNum}" 
-                           value="${stageData.description}" 
-                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-transparent"
-                           placeholder="예: 김밥을 말아보세요">
-                    <div class="text-xs text-gray-400 mt-1">${stageData.description.substring(0, 30)}${stageData.description.length > 30 ? '...' : ''}</div>
+                <!-- 단계 제목 (통합) 컬럼 -->
+                <td class="border border-gray-200 px-3 py-3" colspan="2">
+                    <textarea 
+                           id="content_${stageNum}" 
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-transparent resize-none"
+                           rows="3"
+                           placeholder="예: ${stageNum}단계: 김밥말기&#10;김밥을 말아보세요 (+1포인트)"
+                    >${fullContent}</textarea>
+                    <div class="text-xs text-gray-400 mt-1">
+                        💡 팁: "${stageNum}단계: 제목" 형식으로 작성하고, 다음 줄에 설명을 추가하세요
+                    </div>
                 </td>
                 
                 <!-- 아이콘 컬럼 -->
                 <td class="border border-gray-200 px-3 py-3">
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-col items-center gap-2">
                         <select id="icon_${stageNum}" 
-                                class="text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-transparent">
+                                onchange="stageConfigManager.updateIconPreview(${stageNum})"
+                                class="text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-transparent w-full">
                             ${this.renderIconOptions(icon)}
                         </select>
-                        <div class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-lg" id="iconPreview_${stageNum}">
+                        <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-xl" id="iconPreview_${stageNum}">
                             ${icon}
                         </div>
                     </div>
@@ -226,11 +219,15 @@ class StageConfigManager {
     renderIconOptions(currentIcon) {
         const icons = [
             { value: '🍙', label: '🍙 김밥' },
-            { value: '✨', label: '✨ 반짝임' },
+            { value: '🔪', label: '🔪 썰기' },
+            { value: '✂️', label: '✂️ 가위' },
+            { value: '🍴', label: '🍴 포크' },
+            { value: '🥢', label: '🥢 젓가락' },
             { value: '➕', label: '➕ 추가' },
+            { value: '✨', label: '✨ 완성' },
+            { value: '🎯', label: '🎯 목표' },
             { value: '📝', label: '📝 메모' },
             { value: '✅', label: '✅ 체크' },
-            { value: '🎯', label: '🎯 목표' },
             { value: '🔥', label: '🔥 열정' },
             { value: '⭐', label: '⭐ 별' },
             { value: '💪', label: '💪 힘' },
@@ -261,10 +258,9 @@ class StageConfigManager {
             // 각 스테이지 데이터 수집
             const stageData = {};
             for (let i = 1; i <= 3; i++) {
-                const title = document.getElementById(`title_${i}`).value.trim();
-                const description = document.getElementById(`description_${i}`).value.trim();
+                const content = document.getElementById(`content_${i}`).value.trim();
                 
-                stageData[`stage${i}`] = this.combineStageData(title, description);
+                stageData[`stage${i}`] = content;
             }
 
             // 저장 요청
@@ -314,23 +310,19 @@ class StageConfigManager {
      */
     validateAllInputs() {
         for (let i = 1; i <= 3; i++) {
-            const title = document.getElementById(`title_${i}`).value.trim();
-            const description = document.getElementById(`description_${i}`).value.trim();
+            const content = document.getElementById(`content_${i}`).value.trim();
 
-            if (!title) {
-                return { isValid: false, message: `${i}단계 제목을 입력해주세요.` };
+            if (!content) {
+                return { isValid: false, message: `${i}단계 내용을 입력해주세요.` };
+            }
+
+            if (content.length > 200) {
+                return { isValid: false, message: `${i}단계 내용이 너무 깁니다. (최대 200자)` };
             }
             
-            if (!description) {
-                return { isValid: false, message: `${i}단계 설명을 입력해주세요.` };
-            }
-
-            if (title.length > 50) {
-                return { isValid: false, message: `${i}단계 제목이 너무 깁니다. (최대 50자)` };
-            }
-
-            if (description.length > 100) {
-                return { isValid: false, message: `${i}단계 설명이 너무 깁니다. (최대 100자)` };
+            // 기본 형식 가이드 (선택사항)
+            if (!content.includes(`${i}단계`)) {
+                console.warn(`[StageConfig] ${i}단계에 단계 번호가 포함되지 않았습니다.`);
             }
         }
 
@@ -382,6 +374,20 @@ class StageConfigManager {
         } catch (error) {
             console.error('[StageConfig] 기본값 복원 실패:', error);
             alert('❌ 기본값 복원에 실패했습니다. 다시 시도해주세요.');
+        }
+    }
+
+    /**
+     * 아이콘 미리보기 업데이트
+     */
+    updateIconPreview(stageNum) {
+        const iconSelect = document.getElementById(`icon_${stageNum}`);
+        const iconPreview = document.getElementById(`iconPreview_${stageNum}`);
+        
+        if (iconSelect && iconPreview) {
+            const selectedIcon = iconSelect.value;
+            iconPreview.textContent = selectedIcon;
+            console.log(`[StageConfig] ${stageNum}단계 아이콘 미리보기 업데이트: ${selectedIcon}`);
         }
     }
 
