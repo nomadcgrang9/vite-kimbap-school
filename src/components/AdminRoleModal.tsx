@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { 
   loadAdminSessions, 
+  deleteAdminSession,
   type AdminSession 
 } from '../services/adminSessionService';
 import { 
@@ -17,6 +18,7 @@ import {
   loadAdminAssignments, 
   type AdminAssignment 
 } from '../services/adminAssignmentService';
+import EditSessionModal from './EditSessionModal';
 
 // ============ 타입 정의 ============
 
@@ -37,6 +39,10 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
   const [students, setStudents] = useState<AdminStudent[]>([]);
   const [assignments, setAssignments] = useState<AdminAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 세션 편집 모달 상태
+  const [editingSession, setEditingSession] = useState<AdminSession | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // 데이터 로드
   useEffect(() => {
@@ -81,9 +87,123 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
     }
   };
 
-  const handleTabSwitch = (tab: TabType) => {
+  const handleTabSwitch = async (tab: TabType) => {
+    console.log(`🔄 [AdminRoleModal] 탭 전환 시작: ${tab}`);
+    
+    // 중복 방지 - 이미 같은 탭이면 무시
+    if (activeTab === tab) {
+      console.log(`📍 [AdminRoleModal] 이미 ${tab} 탭이 활성화됨`);
+      return;
+    }
+    
+    // 탭 상태 변경
     setActiveTab(tab);
-    console.log(`🔄 [AdminRoleModal] 탭 전환: ${tab}`);
+    
+    // 탭별 콘텐츠 로드
+    await loadTabContent(tab);
+    
+    console.log(`✅ [AdminRoleModal] 탭 전환 완료: ${tab}`);
+  };
+
+  const loadTabContent = async (tab: TabType) => {
+    console.log(`📋 [AdminRoleModal] ${tab} 탭 콘텐츠 로드 시작`);
+    
+    try {
+      switch (tab) {
+        case 'sessions':
+          await loadSessionsTab();
+          break;
+        case 'assignment':
+          await loadAssignmentTab();
+          break;
+        case 'status':
+          await loadStatusTab();
+          break;
+        default:
+          console.warn(`⚠️ [AdminRoleModal] 알 수 없는 탭: ${tab}`);
+      }
+    } catch (error) {
+      console.error(`❌ [AdminRoleModal] ${tab} 탭 로드 오류:`, error);
+    }
+  };
+
+  const loadSessionsTab = async () => {
+    console.log('📋 [AdminRoleModal] Sessions 탭 콘텐츠 로드');
+    // 세션 관련 추가 로직 (다음 단계에서 구현)
+  };
+
+  const loadAssignmentTab = async () => {
+    console.log('🎯 [AdminRoleModal] Assignment 탭 콘텐츠 로드');
+    // 배정 관련 추가 로직 (다음 단계에서 구현)
+  };
+
+  const loadStatusTab = async () => {
+    console.log('📊 [AdminRoleModal] Status 탭 콘텐츠 로드');
+    // 상태 관련 추가 로직 (다음 단계에서 구현)
+  };
+
+  // ============ 세션 편집 관련 함수들 ============
+  
+  const handleEditSession = (sessionId: string) => {
+    console.log('✏️ [AdminRoleModal] 세션 편집 시작:', sessionId);
+    
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) {
+      console.error('❌ [AdminRoleModal] 세션을 찾을 수 없습니다:', sessionId);
+      alert('세션을 찾을 수 없습니다.');
+      return;
+    }
+    
+    setEditingSession(session);
+    setIsEditModalOpen(true);
+    console.log('✅ [AdminRoleModal] 편집 모달 열림:', session.session_name);
+  };
+
+  const handleCloseEditModal = () => {
+    console.log('🚪 [AdminRoleModal] 편집 모달 닫기');
+    setIsEditModalOpen(false);
+    setEditingSession(null);
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    console.log('🗑️ [AdminRoleModal] 세션 삭제 시작:', sessionId);
+    
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) {
+      console.error('❌ [AdminRoleModal] 세션을 찾을 수 없습니다:', sessionId);
+      alert('세션을 찾을 수 없습니다.');
+      return;
+    }
+    
+    const confirmed = window.confirm(
+      `정말 "${session.session_name}" 세션을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
+    );
+    
+    if (!confirmed) {
+      console.log('🚫 [AdminRoleModal] 세션 삭제 취소됨');
+      return;
+    }
+    
+    try {
+      console.log('💾 [AdminRoleModal] 세션 삭제 요청 중...');
+      const result = await deleteAdminSession(sessionId);
+      
+      if (result.success) {
+        console.log('✅ [AdminRoleModal] 세션 삭제 성공:', result.message);
+        alert(`"${session.session_name}" ${result.message}`);
+        
+        // 데이터 새로고침
+        await loadAllData();
+        
+      } else {
+        console.error('❌ [AdminRoleModal] 세션 삭제 실패:', result.message);
+        alert(`세션 삭제 실패: ${result.message}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ [AdminRoleModal] 세션 삭제 오류:', error);
+      alert('세션 삭제 중 오류가 발생했습니다.');
+    }
   };
 
   if (!isOpen) return null;
@@ -155,7 +275,12 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
             <>
               {/* 세션 관리 탭 */}
               {activeTab === 'sessions' && (
-                <SessionsTab sessions={sessions} onRefresh={loadAllData} />
+                <SessionsTab 
+                  sessions={sessions} 
+                  onRefresh={loadAllData} 
+                  onEditSession={handleEditSession}
+                  onDeleteSession={handleDeleteSession}
+                />
               )}
 
               {/* 배정 관리 탭 */}
@@ -180,13 +305,28 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
           )}
         </div>
       </div>
+
+      {/* 세션 편집 모달 */}
+      {isEditModalOpen && editingSession && (
+        <EditSessionModal
+          session={editingSession}
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          onSave={loadAllData}
+        />
+      )}
     </div>
   );
 }
 
 // ============ 세션 관리 탭 컴포넌트 ============
 
-function SessionsTab({ sessions, onRefresh }: { sessions: AdminSession[]; onRefresh: () => void }) {
+function SessionsTab({ sessions, onRefresh, onEditSession, onDeleteSession }: { 
+  sessions: AdminSession[]; 
+  onRefresh: () => void;
+  onEditSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
+}) {
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="mb-6">
@@ -242,13 +382,19 @@ function SessionsTab({ sessions, onRefresh }: { sessions: AdminSession[]; onRefr
                 </div>
                 
                 <div className="flex space-x-2">
-                  <button className="text-blue-500 hover:text-blue-600 px-3 py-1">
+                  <button 
+                    onClick={() => onEditSession(session.id)}
+                    className="text-blue-500 hover:text-blue-600 px-3 py-1 transition-colors"
+                  >
                     <i className="fas fa-edit mr-1"></i>수정
                   </button>
                   <button className="text-purple-500 hover:text-purple-600 px-3 py-1">
                     <i className="fas fa-user-plus mr-1"></i>배정
                   </button>
-                  <button className="text-red-500 hover:text-red-600 px-3 py-1">
+                  <button 
+                    onClick={() => onDeleteSession(session.id)}
+                    className="text-red-500 hover:text-red-600 px-3 py-1 transition-colors"
+                  >
                     <i className="fas fa-trash mr-1"></i>삭제
                   </button>
                 </div>

@@ -170,3 +170,47 @@ export function filterSessionsByClass(sessions: AdminSession[], targetClass: str
     session.target_class.includes(targetClass)
   );
 }
+
+// ============ 세션 삭제 함수 ============
+
+export async function deleteAdminSession(sessionId: string): Promise<{
+  success: boolean;
+  message: string;
+  error?: any;
+}> {
+  console.log('🗑️ [AdminSessionService] 세션 삭제 시작:', sessionId);
+  
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase 클라이언트를 초기화할 수 없습니다');
+    }
+
+    console.log('💾 [AdminSessionService] Supabase에서 세션 삭제 중...');
+    
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', sessionId);
+    
+    if (error) {
+      console.error('❌ [AdminSessionService] 세션 삭제 실패:', error);
+      throw new Error(`세션 삭제 실패: ${error.message}`);
+    }
+    
+    console.log('✅ [AdminSessionService] 세션 삭제 성공');
+    
+    return {
+      success: true,
+      message: '세션이 성공적으로 삭제되었습니다.'
+    };
+    
+  } catch (error) {
+    console.error('❌ [AdminSessionService] 세션 삭제 오류:', error);
+    return {
+      success: false,
+      message: '세션 삭제 중 오류가 발생했습니다.',
+      error
+    };
+  }
+}
