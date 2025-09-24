@@ -4,6 +4,7 @@
  * 원본: admin-rolesv2.js editSession()
  */
 
+import { useState } from 'react';
 import type { AdminSession } from '../services/adminSessionService';
 
 interface EditSessionModalProps {
@@ -15,6 +16,67 @@ interface EditSessionModalProps {
 
 export default function EditSessionModal({ session, isOpen, onClose, onSave }: EditSessionModalProps) {
   console.log('🛠️ [EditSessionModal] 렌더링 - 세션:', session.session_name);
+  
+  // 역할 관리 상태
+  const [missions, setMissions] = useState(session.parsedMissions || []);
+  
+  // ============ 역할 관리 함수들 ============
+  
+  const addNewRole = () => {
+    console.log('➕ [EditSessionModal] 새 역할 추가 시작');
+    
+    const newRole = {
+      name: `새 역할 ${missions.length + 1}`,
+      type: 'text' as const
+    };
+    
+    const updatedMissions = [...missions, newRole];
+    setMissions(updatedMissions);
+    
+    console.log('✅ [EditSessionModal] 새 역할 추가 완료:', newRole.name);
+    console.log('📋 [EditSessionModal] 현재 역할 수:', updatedMissions.length);
+  };
+  
+  const removeRole = (indexToRemove: number) => {
+    console.log('🗑️ [EditSessionModal] 역할 삭제 시작 - 인덱스:', indexToRemove);
+    
+    if (indexToRemove < 0 || indexToRemove >= missions.length) {
+      console.error('❌ [EditSessionModal] 잘못된 인덱스:', indexToRemove);
+      return;
+    }
+    
+    const roleToRemove = missions[indexToRemove];
+    const confirmed = window.confirm(`정말 "${roleToRemove.name}" 역할을 삭제하시겠습니까?`);
+    
+    if (!confirmed) {
+      console.log('🚫 [EditSessionModal] 역할 삭제 취소됨');
+      return;
+    }
+    
+    const updatedMissions = missions.filter((_, index) => index !== indexToRemove);
+    setMissions(updatedMissions);
+    
+    console.log('✅ [EditSessionModal] 역할 삭제 완료:', roleToRemove.name);
+    console.log('📋 [EditSessionModal] 현재 역할 수:', updatedMissions.length);
+  };
+  
+  const updateRoleName = (index: number, newName: string) => {
+    console.log('✏️ [EditSessionModal] 역할명 변경:', index, newName);
+    
+    const updatedMissions = missions.map((mission, i) => 
+      i === index ? { ...mission, name: newName } : mission
+    );
+    setMissions(updatedMissions);
+  };
+  
+  const updateRoleType = (index: number, newType: 'text' | 'image') => {
+    console.log('🔄 [EditSessionModal] 역할 타입 변경:', index, newType);
+    
+    const updatedMissions = missions.map((mission, i) => 
+      i === index ? { ...mission, type: newType } : mission
+    );
+    setMissions(updatedMissions);
+  };
   
   if (!isOpen) return null;
 
@@ -98,6 +160,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
                 </h4>
                 <button 
                   type="button"
+                  onClick={addNewRole}
                   className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors"
                 >
                   <i className="fas fa-plus mr-1"></i>역할 추가
@@ -105,24 +168,27 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
               </div>
               
               <div className="space-y-3 max-h-80 overflow-y-auto">
-                {session.parsedMissions && session.parsedMissions.length > 0 ? (
-                  session.parsedMissions.map((mission, index) => (
-                    <div key={index} className="bg-gray-50 border rounded p-3">
+                {missions && missions.length > 0 ? (
+                  missions.map((mission, index) => (
+                    <div key={`role-${index}`} className="bg-gray-50 border rounded p-3">
                       <div className="flex items-center justify-between mb-2">
                         <input 
                           type="text" 
-                          defaultValue={mission.name || `역할 ${index + 1}`}
-                          className="font-medium bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
+                          value={mission.name || `역할 ${index + 1}`}
+                          onChange={(e) => updateRoleName(index, e.target.value)}
+                          className="font-medium bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2 flex-1"
                         />
                         <button 
                           type="button"
-                          className="text-red-500 hover:text-red-700 text-sm transition-colors"
+                          onClick={() => removeRole(index)}
+                          className="text-red-500 hover:text-red-700 text-sm transition-colors ml-2"
                         >
                           <i className="fas fa-trash"></i>
                         </button>
                       </div>
                       <select 
-                        defaultValue={mission.type || 'text'}
+                        value={mission.type || 'text'}
+                        onChange={(e) => updateRoleType(index, e.target.value as 'text' | 'image')}
                         className="w-full text-sm px-2 py-1 border rounded"
                       >
                         <option value="text">텍스트 역할</option>
