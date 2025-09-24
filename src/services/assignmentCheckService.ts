@@ -19,9 +19,12 @@ export interface StudentAssignment extends Assignment {
   studentId: string;
   studentName: string;
   roleName?: string;
+  role_name?: string;          // Supabase 필드명 호환
   roleContent?: string;
   roleDescription?: string;
+  role_description?: string;   // Supabase 필드명 호환
   sessionName?: string;
+  session_name?: string;       // Supabase 필드명 호환
   roleType?: string;
   missions?: Mission[];
 }
