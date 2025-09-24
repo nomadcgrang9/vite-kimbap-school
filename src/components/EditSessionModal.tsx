@@ -87,7 +87,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-xl font-bold text-gray-800">
             <i className="fas fa-edit mr-2 text-blue-500"></i>
-            세션 편집: {session.session_name}
+            세션 편집: {session.session_name || session.name}
           </h3>
           <button 
             onClick={onClose}
@@ -110,7 +110,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
                 <label className="block text-sm font-medium text-gray-700 mb-2">세션 이름 *</label>
                 <input 
                   type="text" 
-                  defaultValue={session.session_name}
+                  defaultValue={session.session_name || session.name}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -119,7 +119,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
                 <label className="block text-sm font-medium text-gray-700 mb-2">활동 설명</label>
                 <textarea 
                   rows={4}
-                  defaultValue={session.description || ''}
+                  defaultValue={session.description || session.activity_instructions || ''}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -143,7 +143,7 @@ export default function EditSessionModal({ session, isOpen, onClose, onSave }: E
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
                 <select 
-                  defaultValue={session.is_active ? 'active' : 'inactive'}
+                  defaultValue={session.is_active || (session.status === 'active') ? 'active' : 'inactive'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="active">활성</option>

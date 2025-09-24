@@ -163,7 +163,7 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
     
     setEditingSession(session);
     setIsEditModalOpen(true);
-    console.log('✅ [AdminRoleModal] 편집 모달 열림:', session.session_name);
+    console.log('✅ [AdminRoleModal] 편집 모달 열림:', session.session_name || session.name);
   };
 
   const handleCloseEditModal = () => {
@@ -183,7 +183,7 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
     }
     
     const confirmed = window.confirm(
-      `정말 "${session.session_name}" 세션을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
+      `정말 "${session.session_name || session.name}" 세션을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
     );
     
     if (!confirmed) {
@@ -197,7 +197,7 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
       
       if (result.success) {
         console.log('✅ [AdminRoleModal] 세션 삭제 성공:', result.message);
-        alert(`"${session.session_name}" ${result.message}`);
+        alert(`"${session.session_name || session.name}" ${result.message}`);
         
         // 데이터 새로고침
         await loadAllData();
@@ -369,14 +369,14 @@ function SessionsTab({ sessions, onRefresh, onEditSession, onDeleteSession }: {
                 <div className="flex-1">
                   <div className="flex items-center">
                     <span className={`inline-block w-3 h-3 rounded-full mr-3 ${
-                      session.is_active ? 'bg-green-500' : 'bg-gray-400'
+                      (session.is_active || session.status === 'active') ? 'bg-green-500' : 'bg-gray-400'
                     }`}></span>
-                    <h4 className="font-medium text-gray-900">{session.session_name}</h4>
+                    <h4 className="font-medium text-gray-900">{session.session_name || session.name}</h4>
                   </div>
                   
                   <div className="mt-2 text-sm text-gray-600 space-y-1">
-                    {session.description && (
-                      <p><i className="fas fa-align-left mr-2"></i>{session.description}</p>
+                    {(session.description || session.activity_instructions) && (
+                      <p><i className="fas fa-align-left mr-2"></i>{session.description || session.activity_instructions}</p>
                     )}
                     {session.target_class && (
                       <p><i className="fas fa-users mr-2"></i>대상: {session.target_class}</p>
@@ -480,7 +480,7 @@ function StatusTab({ sessions, students, assignments }: {
   assignments: AdminAssignment[] 
 }) {
   const activeAssignments = assignments.filter(a => a.is_active);
-  const activeSessions = sessions.filter(s => s.is_active);
+  const activeSessions = sessions.filter(s => s.is_active || s.status === 'active');
 
   return (
     <div className="h-full overflow-y-auto p-6">

@@ -21,13 +21,17 @@ export interface AdminSession {
   id: string;
   created_at: string;
   updated_at?: string;
-  session_name: string;
-  description?: string;
+  name: string; // DB 컬럼명과 일치: name
+  activity_instructions?: string; // DB 컬럼명과 일치: activity_instructions  
   target_class?: string;
   missions?: string; // JSON string
   parsedMissions?: Mission[]; // 파싱된 missions
-  is_active: boolean;
-  creator_id?: string;
+  status: string; // DB 컬럼명과 일치: status ('active' | 'inactive')
+  type?: string; // DB에 있는 type 컬럼
+  // 편의를 위한 computed properties
+  session_name?: string; // name의 별칭
+  description?: string; // activity_instructions의 별칭
+  is_active?: boolean; // status === 'active'의 별칭
 }
 
 export interface AdminSessionLoadResult {
@@ -95,9 +99,13 @@ export async function loadAdminSessions(): Promise<AdminSessionLoadResult> {
       console.log('🔍 [AdminSessionService] 첫 번째 세션 키들:', Object.keys(sessions[0]));
     }
     
-    // missions 데이터 파싱
+    // missions 데이터 파싱 및 편의 속성 추가
     const processedSessions: AdminSession[] = sessions.map(session => ({
       ...session,
+      // 편의를 위한 별칭 속성들 추가
+      session_name: session.name, // name -> session_name 별칭
+      description: session.activity_instructions, // activity_instructions -> description 별칭
+      is_active: session.status === 'active', // status -> is_active 별칭
       parsedMissions: safeParseMissions(session.missions)
     }));
     
