@@ -13,7 +13,7 @@ interface LoginCardProps {
 export default function LoginCard({ isLoggedIn, onLogin }: LoginCardProps) {
   const [studentId, setStudentId] = useState('');
   const [studentName, setStudentName] = useState('');
-  const [showTeacherLogin, setShowTeacherLogin] = useState(false);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

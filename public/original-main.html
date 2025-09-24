@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.35, maximum-scale=2.0, user-scalable=yes">
+    <title>창건샘의 김밥교실</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .role-card {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 타이머 스타일 */
+        .timer-display {
+            font-family: 'Courier New', monospace;
+            font-size: 3.5rem;
+            font-weight: bold;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .timer-ending {
+            animation: pulse 1s infinite;
+            color: #ef4444;
+        }
+        
+        /* 돌림판 스타일 */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinning {
+            animation: spin 3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+        
+        /* 13인치 크롬북 최적화 - 한 화면에 3개 카드 표시 */
+        body {
+            font-size: 100%;
+            zoom: 0.53;  /* 53% 크기로 조정 - 크롬북에서 최적의 가독성과 화면 활용 */
+            transform-origin: top left;
+        }
+        
+        /* 브라우저 호환성을 위한 추가 설정 */
+        @media screen {
+            html {
+                zoom: 1.35;
+            }
+        }
+
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+    <!-- Navigation -->
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-sushi text-3xl"></i>
+                    <h1 class="text-2xl font-bold">창건샘의 김밥교실</h1>
+                </div>
+                <div class="text-sm opacity-90">
+                    <span id="currentTime"></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content - 가로 3분할 레이아웃 -->
+    <div class="w-full px-2 py-1">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch max-w-7xl mx-auto">
+            
+            <!-- 야채김밥 (타이머) - 왼쪽 -->
+            <div class="bg-white rounded-2xl shadow-xl p-4 flex flex-col justify-between">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
+                        <i class="fas fa-stopwatch text-3xl text-green-600"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800">🥕 야채김밥</h2>
+                </div>
+
+                <!-- 타이머 설정 -->
+                <div class="mb-4">
+                    <div class="flex space-x-2 items-center justify-center">
+                        <div class="text-center">
+                            <input type="number" id="timerMinutes" min="0" max="99" value="5" 
+                                   class="w-20 px-2 py-2 text-center border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xl font-bold">
+                            <p class="text-sm text-gray-500 mt-1 font-semibold">분</p>
+                        </div>
+                        <span class="text-3xl font-bold text-gray-400">:</span>
+                        <div class="text-center">
+                            <input type="number" id="timerSeconds" min="0" max="59" value="0" 
+                                   class="w-20 px-2 py-2 text-center border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xl font-bold">
+                            <p class="text-sm text-gray-500 mt-1 font-semibold">초</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 타이머 디스플레이 -->
+                <div class="mb-8 text-center">
+                    <div id="timerDisplay" class="timer-display text-green-600" style="font-size: 4.5rem;">
+                        05:00
+                    </div>
+                    <div id="timerStatus" class="text-lg text-gray-500 mt-2 font-semibold">
+                        대기 중
+                    </div>
+                </div>
+
+                <!-- 타이머 컨트롤 버튼 -->
+                <div class="flex space-x-2 mb-8">
+                    <button id="startTimer" onclick="startTimer()" 
+                            class="flex-1 bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 transition text-base">
+                        <i class="fas fa-play mr-2"></i>시작
+                    </button>
+                    <button id="pauseTimer" onclick="pauseTimer()" 
+                            class="flex-1 bg-yellow-500 text-white font-bold py-3 rounded-lg hover:bg-yellow-600 transition hidden text-base">
+                        <i class="fas fa-pause mr-2"></i>일시정지
+                    </button>
+                    <button id="resetTimer" onclick="resetTimer()" 
+                            class="flex-1 bg-gray-500 text-white font-bold py-3 rounded-lg hover:bg-gray-600 transition text-base">
+                        <i class="fas fa-redo mr-2"></i>리셋
+                    </button>
+                </div>
+
+                <!-- 빠른 설정 버튼 -->
+                <div class="grid grid-cols-3 gap-2 mb-0">
+                    <button onclick="setQuickTimeSeconds(20)" class="py-3 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                        20초
+                    </button>
+                    <button onclick="setQuickTimeSeconds(30)" class="py-3 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                        30초
+                    </button>
+                    <button onclick="setQuickTimeSeconds(40)" class="py-3 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                        40초
+                    </button>
+                    <button onclick="setQuickTimeSeconds(50)" class="py-3 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                        50초
+                    </button>
+                    <button onclick="setQuickTimeSeconds(60)" class="py-3 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                        60초
+                    </button>
+                    <button onclick="setQuickTimeSeconds(90)" class="py-3 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                        90초
+                    </button>
+                </div>
+            </div>
+
+            <!-- 참치김밥 (학생 로그인) - 가운데 -->
+            <div class="bg-white rounded-2xl shadow-xl p-4 flex flex-col justify-between">
+                <div id="loginSection">
+                    <div class="text-center mb-8">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-3">
+                            <i class="fas fa-user-graduate text-3xl text-purple-600"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">🐟 참치김밥</h2>
+                    </div>
+
+                    <form onsubmit="studentLogin(event)">
+                        <div class="mb-12">
+                            <label class="block text-base font-bold text-gray-700 mb-3">
+                                <i class="fas fa-id-card mr-2 text-purple-500"></i>학번
+                            </label>
+                            <input type="text" id="loginStudentId" 
+                                   placeholder="예: 4103" 
+                                   pattern="[0-9]{4}"
+                                   maxlength="4"
+                                   required
+                                   class="w-full px-4 py-4 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-xl text-center font-bold">
+                        </div>
+
+                        <div class="mb-12">
+                            <label class="block text-base font-bold text-gray-700 mb-3">
+                                <i class="fas fa-user mr-2 text-purple-500"></i>이름
+                            </label>
+                            <input type="text" id="loginStudentName" 
+                                   placeholder="예: 김선호" 
+                                   required
+                                   class="w-full px-4 py-4 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-xl text-center font-bold">
+                        </div>
+
+                        <button type="submit" 
+                                class="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold py-4 rounded-lg hover:opacity-90 transition transform hover:scale-105 text-lg mb-12">
+                            <i class="fas fa-arrow-right mr-2"></i>학생 로그인
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Teacher Login Button -->
+                <div class="pt-4 border-t border-gray-200 text-center mb-0">
+                    <button onclick="showTeacherLogin()" 
+                            class="text-gray-500 hover:text-gray-700 text-xs underline">
+                        <i class="fas fa-user-shield mr-1"></i>선생님 로그인
+                    </button>
+                </div>
+            </div>
+
+            <!-- 치즈김밥 (돌림판) - 오른쪽 -->
+            <div class="bg-white rounded-2xl shadow-xl p-4 flex flex-col justify-between">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-3">
+                        <i class="fas fa-dice text-3xl text-yellow-600"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800">🧀 치즈김밥</h2>
+                </div>
+
+                <!-- 항목 입력 영역 -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-semibold text-gray-700">돌림판 항목</label>
+                        <div class="flex space-x-1">
+                            <select id="savedListsSelect" onchange="loadSelectedList()" 
+                                    class="text-xs border rounded px-2 py-1 max-w-20">
+                                <option value="">불러오기</option>
+                            </select>
+                            <button onclick="refreshSavedLists()" class="text-xs text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="wheelItems" 
+                            placeholder="항목을 입력하세요 (한 줄에 하나씩)&#10;예:&#10;1번&#10;2번&#10;3번" 
+                            class="w-full px-2 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-xs"
+                            rows="3">1번
+2번
+3번
+4번
+5번</textarea>
+                    <div class="mt-1 flex space-x-2">
+                        <button onclick="clearWheel()" class="flex-1 bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs hover:bg-gray-300">
+                            <i class="fas fa-eraser mr-1"></i>초기화
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 뽑는 갯수 입력 -->
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-700 block mb-2">뽑는 갯수</label>
+                    <input type="number" id="pickCount" min="1" max="10" value="1" 
+                           class="w-full px-2 py-1 border rounded text-xs text-center"
+                           placeholder="뽑을 개수를 입력하세요">
+                </div>
+
+                <!-- 돌림판 영역 -->
+                <div class="relative mb-8" style="height: 220px;">
+                    <!-- Canvas for wheel -->
+                    <canvas id="wheelCanvas" width="210" height="210" 
+                            class="mx-auto cursor-pointer"
+                            style="display: block;">
+                    </canvas>
+                </div>
+
+                <!-- 돌리기 버튼 -->
+                <button onclick="spinWheel()" id="spinButton"
+                        class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-white font-bold py-2 rounded-lg hover:opacity-90 transition transform hover:scale-105 text-sm mb-0">
+                    <i class="fas fa-sync-alt mr-2"></i>돌리기!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- React 마운트 포인트 -->
+    <div id="root"></div>
+
+    <!-- React 스크립트 (기존 JavaScript 대체) -->
+    <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+        // 시계 업데이트
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+
+        // 간단한 타이머 기능 (원본 유지하면서 최소한만)
+        let timerInterval = null;
+        let isTimerRunning = false;
+
+        function startTimer() {
+            if (isTimerRunning) return;
+            
+            const minutes = parseInt(document.getElementById('timerMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('timerSeconds').value) || 0;
+            let totalSeconds = minutes * 60 + seconds;
+            
+            if (totalSeconds <= 0) {
+                alert('시간을 설정해주세요.');
+                return;
+            }
+            
+            isTimerRunning = true;
+            document.getElementById('timerStatus').textContent = '진행 중';
+            document.getElementById('startTimer').style.display = 'none';
+            document.getElementById('pauseTimer').style.display = 'block';
+            
+            timerInterval = setInterval(() => {
+                totalSeconds--;
+                
+                const mins = Math.floor(totalSeconds / 60);
+                const secs = totalSeconds % 60;
+                
+                document.getElementById('timerDisplay').textContent = 
+                    String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+                
+                if (totalSeconds <= 30) {
+                    document.getElementById('timerDisplay').className = 'timer-display timer-ending';
+                }
+                
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    document.getElementById('timerStatus').textContent = '시간 종료!';
+                    document.getElementById('startTimer').style.display = 'block';
+                    document.getElementById('pauseTimer').style.display = 'none';
+                    alert('시간이 종료되었습니다!');
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('timerStatus').textContent = '일시정지';
+            document.getElementById('startTimer').style.display = 'block';
+            document.getElementById('pauseTimer').style.display = 'none';
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            
+            const minutes = parseInt(document.getElementById('timerMinutes').value) || 5;
+            const seconds = parseInt(document.getElementById('timerSeconds').value) || 0;
+            
+            document.getElementById('timerDisplay').textContent = 
+                String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            document.getElementById('timerDisplay').className = 'timer-display text-green-600';
+            document.getElementById('timerStatus').textContent = '대기 중';
+            document.getElementById('startTimer').style.display = 'block';
+            document.getElementById('pauseTimer').style.display = 'none';
+        }
+
+        function setQuickTimeSeconds(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            
+            document.getElementById('timerMinutes').value = mins;
+            document.getElementById('timerSeconds').value = secs;
+            document.getElementById('timerDisplay').textContent = 
+                String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+
+        // 간단한 돌림판 기능
+        function spinWheel() {
+            const canvas = document.getElementById('wheelCanvas');
+            const items = document.getElementById('wheelItems').value.split('\n').filter(item => item.trim());
+            
+            if (items.length === 0) {
+                alert('돌림판 항목을 입력해주세요.');
+                return;
+            }
+            
+            const pickCount = parseInt(document.getElementById('pickCount').value) || 1;
+            
+            canvas.classList.add('spinning');
+            document.getElementById('spinButton').disabled = true;
+            
+            setTimeout(() => {
+                canvas.classList.remove('spinning');
+                document.getElementById('spinButton').disabled = false;
+                
+                // 랜덤 선택
+                const shuffled = [...items].sort(() => Math.random() - 0.5);
+                const selected = shuffled.slice(0, Math.min(pickCount, items.length));
+                
+                const resultMessage = selected.length === 1 
+                    ? `선택된 항목: ${selected[0]}`
+                    : `선택된 항목들: ${selected.join(', ')}`;
+                
+                alert(resultMessage);
+            }, 3000);
+        }
+
+        function clearWheel() {
+            document.getElementById('wheelItems').value = '';
+        }
+
+        function studentLogin(event) {
+            event.preventDefault();
+            const studentId = document.getElementById('loginStudentId').value;
+            const studentName = document.getElementById('loginStudentName').value;
+            
+            if (!studentId || !studentName) {
+                alert('학번과 이름을 모두 입력해주세요.');
+                return;
+            }
+            
+            if (studentId.length !== 4 || !/^\d{4}$/.test(studentId)) {
+                alert('학번은 4자리 숫자로 입력해주세요.');
+                return;
+            }
+            
+            alert(`${studentName}(${studentId})님 로그인되었습니다.`);
+        }
+
+        function showTeacherLogin() {
+            alert('선생님 로그인 기능은 곧 구현될 예정입니다.');
+        }
+
+        // 초기화
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+    </script>
+</body>
+</html>

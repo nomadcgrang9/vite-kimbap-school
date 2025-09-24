@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 V2</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        .debug-log {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 4px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error-log {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+        }
+        .success-log {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #060;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-cog text-blue-500 mr-2"></i>
+                관리자 페이지 V2
+            </h1>
+            <div class="flex items-center space-x-4">
+                <span id="currentTime" class="text-sm text-gray-600"></span>
+                <button onclick="teacherLogout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- System Status -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-heartbeat text-green-500 mr-2"></i>
+                시스템 상태
+            </h2>
+            <div id="systemStatus" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- 상태 표시될 곳 -->
+            </div>
+        </div>
+
+        <!-- Main Functions Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- 1. 포인트 관리 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-star text-yellow-500 mr-2"></i>
+                    포인트 관리
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">학생들의 포인트 현황을 확인하고 관리합니다.</p>
+                <button onclick="loadPointsModule()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>포인트 관리 열기
+                </button>
+                <div id="pointsModuleStatus" class="mt-2 text-xs"></div>
+            </div>
+
+            <!-- 2. 학생 관리 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-users text-green-500 mr-2"></i>
+                    학생 관리
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">학생 등록 현황과 학급별 명단을 관리합니다.</p>
+                <button onclick="loadStudentsModule()" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>학생 관리 열기
+                </button>
+                <div id="studentsModuleStatus" class="mt-2 text-xs"></div>
+            </div>
+
+            <!-- 3. 역할 배정 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-tasks text-purple-500 mr-2"></i>
+                    역할 배정
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">학생들에게 역할과 미션을 배정합니다.</p>
+                <button onclick="loadRolesModuleWrapper()" class="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>역할 배정 열기
+                </button>
+                <div id="rolesModuleStatus" class="mt-2 text-xs"></div>
+            </div>
+
+            <!-- 4. 스테이지 설정 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-flag-checkered text-orange-500 mr-2"></i>
+                    오늘의 할일 설정
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">스테이지별 설명과 포인트를 설정합니다.</p>
+                <button onclick="loadStageConfigModule()" class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>스테이지 설정 열기
+                </button>
+                <div id="stageConfigStatus" class="mt-2 text-xs"></div>
+            </div>
+
+            <!-- 5. 학습 안내 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-book text-indigo-500 mr-2"></i>
+                    학습 안내
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">학년별 학습 안내를 설정합니다.</p>
+                <button onclick="loadGuidesModule()" class="w-full bg-indigo-500 text-white py-2 rounded hover:bg-indigo-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>학습 안내 열기
+                </button>
+                <div id="guidesModuleStatus" class="mt-2 text-xs"></div>
+            </div>
+
+            <!-- 6. 돌림판 관리 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-dharmachakra text-yellow-500 mr-2"></i>
+                    돌림판 관리
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">메인페이지 돌림판에 사용할 목록을 관리합니다.</p>
+                <button onclick="loadSpinnerModule()" class="w-full bg-yellow-500 text-white py-2 rounded hover:bg-yellow-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>돌림판 관리 열기
+                </button>
+                <div id="spinnerModuleStatus" class="mt-2 text-xs"></div>
+            </div>
+
+            <!-- 7. 선생님 메시지 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-envelope text-pink-500 mr-2"></i>
+                    선생님 메시지
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">학생들에게 메시지를 전달합니다.</p>
+                <button onclick="loadMessagesModule()" class="w-full bg-pink-500 text-white py-2 rounded hover:bg-pink-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>메시지 관리 열기
+                </button>
+                <div id="messagesModuleStatus" class="mt-2 text-xs"></div>
+            </div>
+
+            <!-- 8. 오늘의 뽑기 관리 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-gift text-purple-500 mr-2"></i>
+                    오늘의 뽑기 관리
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">학생들이 2단계 완료 시 받을 수 있는 뽑기 메시지를 관리합니다.</p>
+                <button onclick="loadLuckyDrawModule()" class="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600 transition">
+                    <i class="fas fa-arrow-right mr-2"></i>뽑기 관리 열기
+                </button>
+                <div id="luckyDrawModuleStatus" class="mt-2 text-xs"></div>
+            </div>
+
+        </div>
+
+        <!-- Debug Console -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-terminal text-gray-600 mr-2"></i>
+                디버그 콘솔
+            </h3>
+            <div id="debugConsole" class="max-h-64 overflow-y-auto">
+                <div class="debug-log">🚀 시스템 시작...</div>
+            </div>
+            <button onclick="clearDebugConsole()" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">
+                <i class="fas fa-trash mr-2"></i>콘솔 지우기
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modalContainer"></div>
+
+    <!-- Core Scripts -->
+    <script>
+        // ========== 디버그 시스템 ==========
+        const DEBUG = true; // 디버그 모드 켜기
+        
+        function log(message, type = 'info') {
+            if (!DEBUG) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📍';
+            
+            console.log(`[${timestamp}] ${prefix} ${message}`);
+            
+            // 화면에도 표시
+            const debugConsole = document.getElementById('debugConsole');
+            if (debugConsole) {
+                const logDiv = document.createElement('div');
+                logDiv.className = `debug-log ${type === 'error' ? 'error-log' : type === 'success' ? 'success-log' : ''}`;
+                logDiv.textContent = `[${timestamp}] ${message}`;
+                debugConsole.appendChild(logDiv);
+                debugConsole.scrollTop = debugConsole.scrollHeight;
+            }
+        }
+        
+        function clearDebugConsole() {
+            const debugConsole = document.getElementById('debugConsole');
+            if (debugConsole) {
+                debugConsole.innerHTML = '<div class="debug-log">🚀 콘솔 초기화됨</div>';
+            }
+        }
+
+        // ========== 시스템 상태 체크 ==========
+        function checkSystemStatus() {
+            log('시스템 상태 체크 시작');
+            
+            const statusContainer = document.getElementById('systemStatus');
+            if (!statusContainer) return;
+            
+            const statuses = [
+                { name: 'Supabase', check: (typeof globalSupabaseClient !== 'undefined' && globalSupabaseClient !== null) || (typeof supabase !== 'undefined' && supabase !== null), icon: '🔗' },
+                { name: 'Supabase API', check: typeof supabaseAPI !== 'undefined', icon: '🔌' },
+                { name: 'LocalStorage', check: typeof localStorage !== 'undefined', icon: '💾' }
+            ];
+            
+            statusContainer.innerHTML = statuses.map(status => `
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">${status.icon}</span>
+                    <div>
+                        <p class="text-sm font-semibold">${status.name}</p>
+                        <p class="text-xs ${status.check ? 'text-green-600' : 'text-red-600'}">
+                            ${status.check ? '정상' : '미연결'}
+                        </p>
+                    </div>
+                </div>
+            `).join('');
+            
+            log(`시스템 체크 완료: ${statuses.filter(s => s.check).length}/${statuses.length} 정상`, 'success');
+            
+            // Supabase 테이블 체크
+            checkSupabaseTables();
+        }
+        
+        // Supabase 테이블 확인
+        async function checkSupabaseTables() {
+            if (typeof supabaseAPI === 'undefined' || !globalSupabaseClient) {
+                log('Supabase API 사용 불가 - 테이블 체크 건너뜀', 'error');
+                return;
+            }
+            
+            log('Supabase 테이블 체크 시작');
+            
+            const tables = [
+                'students',
+                'daily_points',
+                'point_history',
+                'sessions',
+                'assignments',
+                'board_content'
+            ];
+            
+            for (const table of tables) {
+                try {
+                    const { data, error } = await globalSupabaseClient
+                        .from(table)
+                        .select('*')
+                        .limit(1);
+                    
+                    if (error) {
+                        log(`❌ 테이블 [${table}] 접근 실패: ${error.message}`, 'error');
+                    } else {
+                        log(`✅ 테이블 [${table}] 접근 가능`, 'success');
+                    }
+                } catch (e) {
+                    log(`❌ 테이블 [${table}] 오류: ${e.message}`, 'error');
+                }
+            }
+        }
+
+        // ========== 모듈 로더 ==========
+        async function loadModule(moduleName, fileName, autoExecute = false) {
+            try {
+                log(`${moduleName} 모듈 로딩 시작`);
+                
+                const statusDiv = document.getElementById(`${moduleName}ModuleStatus`);
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span class="text-blue-500">로딩 중...</span>';
+                }
+                
+                // 이미 로드된 스크립트인지 체크
+                const existingScript = document.querySelector(`script[src="js/admin-${fileName}.js"]`);
+                if (existingScript) {
+                    log(`${moduleName} 모듈 이미 로드됨`);
+                    
+                    if (statusDiv) {
+                        statusDiv.innerHTML = '<span class="text-green-500">✅ 로드됨</span>';
+                    }
+                    
+                    // autoExecute가 true인 경우에만 실행
+                    if (autoExecute) {
+                        // 무한 루프 방지를 위해 직접 함수 호출 (loadModule 재귀 방지)
+                        setTimeout(() => {
+                            const functionName = `load${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Module`;
+                            const moduleFunction = window[functionName];
+                            log(`${moduleName} 모듈 함수 검색: ${functionName} = ${typeof moduleFunction}`);
+                            
+                            if (typeof moduleFunction === 'function') {
+                                log(`${moduleName} 모듈 실행 중...`);
+                                moduleFunction();
+                            } else {
+                                log(`${moduleName} 모듈 실행 함수를 찾을 수 없음: ${functionName}`, 'error');
+                            }
+                        }, 100);
+                    }
+                    return;
+                }
+                
+                // 동적 스크립트 로드
+                const script = document.createElement('script');
+                // 캐시 무효화를 위한 타임스탬프 추가 (2025-09-23 수정)
+                const timestamp = Date.now();
+                script.src = `js/admin-${fileName}.js?v=${timestamp}`;
+                script.onload = () => {
+                    log(`${moduleName} 모듈 로드 성공`, 'success');
+                    if (statusDiv) {
+                        statusDiv.innerHTML = '<span class="text-green-500">✅ 로드됨</span>';
+                    }
+                    
+                    // autoExecute가 true면 로드 후 바로 실행
+                    if (autoExecute) {
+                        setTimeout(() => {
+                            const functionName = `load${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Module`;
+                            const executeFunction = window[functionName];
+                            log(`${moduleName} 모듈 함수 검색 (신규로드): ${functionName} = ${typeof executeFunction}`);
+                            
+                            if (typeof executeFunction === 'function') {
+                                log(`${moduleName} 모듈 자동 실행`);
+                                executeFunction();
+                            } else {
+                                log(`${moduleName} 모듈 실행 함수를 찾을 수 없음: ${functionName}`, 'error');
+                            }
+                        }, 100);
+                    }
+                };
+                script.onerror = () => {
+                    log(`${moduleName} 모듈 로드 실패`, 'error');
+                    if (statusDiv) {
+                        statusDiv.innerHTML = '<span class="text-red-500">❌ 로드 실패</span>';
+                    }
+                };
+                document.body.appendChild(script);
+                
+            } catch (error) {
+                log(`${moduleName} 모듈 로드 중 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        // 모듈 로더 함수들 (자동 실행 포함)
+        async function loadPointsModule() {
+            try {
+                log('포인트 관리 모듈 로딩 시작');
+                
+                // 스크립트가 이미 로드되어 있는지 확인
+                const existingScript = document.querySelector('script[src="js/admin-points.js"]');
+                if (!existingScript) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'js/admin-points.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    console.log('[Admin] 포인트 스크립트 로드 완료');
+                }
+                
+                // 잠시 대기 후 모듈 확인 및 초기화
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                if (window.pointsModule && typeof window.pointsModule.initialize === 'function') {
+                    console.log('[Admin] 포인트 모듈 초기화 시작...');
+                    await window.pointsModule.initialize();
+                    console.log('[Admin] 포인트 모듈 초기화 완료');
+                    log('포인트 모듈 초기화 완료', 'success');
+                } else {
+                    console.error('[Admin] 포인트 모듈을 찾을 수 없음');
+                    log('포인트 모듈을 찾을 수 없음', 'error');
+                }
+                
+                // UI 표시
+                await showPointsInterface();
+                
+            } catch (error) {
+                console.error('[Admin] 포인트 모듈 로딩 실패:', error);
+                log(`포인트 모듈 로딩 실패: ${error.message}`, 'error');
+            }
+        }
+        // 모든 모듈 로딩 함수들 정의 (loadPointsModule, loadStudentsModule는 이미 위에서 정의됨)
+        async function loadRolesModuleWrapper() { 
+            try {
+                log('역할배정 모듈 로딩 시작');
+                
+                const statusDiv = document.getElementById('rolesModuleStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span class="text-blue-500">로딩 중...</span>';
+                }
+                
+                // admin-rolesv2.js 직접 로드
+                const existingScript = document.querySelector('script[src*="admin-rolesv2.js"]');
+                if (!existingScript) {
+                    const script = document.createElement('script');
+                    script.src = `js/admin-rolesv2.js?v=${Date.now()}`;
+                    
+                    script.onload = async () => {
+                        log('admin-rolesv2.js 로드 성공', 'success');
+                        
+                        // loadRolesModuleWithUI 함수 확인 및 실행
+                        if (typeof window.loadRolesModuleWithUI === 'function') {
+                            try {
+                                log('loadRolesModuleWithUI 실행 중...');
+                                await window.loadRolesModuleWithUI();
+                                
+                                if (statusDiv) {
+                                    statusDiv.innerHTML = '<span class="text-green-500">✅ 성공</span>';
+                                }
+                                log('역할배정 모듈 로딩 완료', 'success');
+                            } catch (error) {
+                                log(`loadRolesModuleWithUI 실행 실패: ${error.message}`, 'error');
+                                if (statusDiv) {
+                                    statusDiv.innerHTML = '<span class="text-red-500">❌ 실행 실패</span>';
+                                }
+                            }
+                        } else {
+                            log('loadRolesModuleWithUI 함수를 찾을 수 없음', 'error');
+                            if (statusDiv) {
+                                statusDiv.innerHTML = '<span class="text-red-500">❌ 함수 없음</span>';
+                            }
+                        }
+                    };
+                    
+                    script.onerror = () => {
+                        log('admin-rolesv2.js 로드 실패', 'error');
+                        if (statusDiv) {
+                            statusDiv.innerHTML = '<span class="text-red-500">❌ 로드 실패</span>';
+                        }
+                    };
+                    
+                    document.head.appendChild(script);
+                } else {
+                    // 이미 로드된 경우 바로 실행
+                    if (typeof window.loadRolesModuleWithUI === 'function') {
+                        try {
+                            log('기존 로드된 모듈 실행 중...');
+                            await window.loadRolesModuleWithUI();
+                            
+                            if (statusDiv) {
+                                statusDiv.innerHTML = '<span class="text-green-500">✅ 성공</span>';
+                            }
+                            log('역할배정 모듈 실행 완료', 'success');
+                        } catch (error) {
+                            log(`모듈 실행 실패: ${error.message}`, 'error');
+                            if (statusDiv) {
+                                statusDiv.innerHTML = '<span class="text-red-500">❌ 실행 실패</span>';
+                            }
+                        }
+                    } else {
+                        log('loadRolesModuleWithUI 함수를 찾을 수 없음', 'error');
+                        if (statusDiv) {
+                            statusDiv.innerHTML = '<span class="text-red-500">❌ 함수 없음</span>';
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                log(`역할배정 모듈 로딩 오류: ${error.message}`, 'error');
+            }
+        }
+        function loadStagesModule() { loadModule('stages', 'stages', true); }
+        function loadGuidesModule() { loadModule('guides', 'guides', true); }
+        function loadSpinnerModule() { loadModule('spinner', 'spinner', true); }
+        async function loadMessagesModule() { 
+            try {
+                log('메시지 모듈 로딩 시작');
+                
+                // 스크립트가 이미 로드되어 있는지 확인
+                const existingScript = document.querySelector('script[src="js/admin-messages.js"]');
+                if (!existingScript) {
+                    // 스크립트 로드
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'js/admin-messages.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    console.log('[Admin] 메시지 스크립트 로드 완료');
+                }
+                
+                // 잠시 대기 후 모듈 확인 및 초기화
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                if (window.messagesModule && typeof window.messagesModule.initialize === 'function') {
+                    console.log('[Admin] 메시지 모듈 초기화 시작...');
+                    await window.messagesModule.initialize();
+                    console.log('[Admin] 메시지 모듈 초기화 완료');
+                    log('메시지 모듈 초기화 완료', 'success');
+                } else {
+                    console.error('[Admin] 메시지 모듈을 찾을 수 없음');
+                    log('메시지 모듈을 찾을 수 없음', 'error');
+                }
+                
+                // UI 표시
+                await showMessagesInterface();
+                
+            } catch (error) {
+                console.error('[Admin] 메시지 모듈 로딩 실패:', error);
+                log(`메시지 모듈 로딩 실패: ${error.message}`, 'error');
+            }
+        }
+
+        // 뽑기 관리 모듈 로딩 함수
+        async function loadLuckyDrawModule() { 
+            try {
+                log('뽑기 관리 모듈 로딩 시작');
+                
+                // 스크립트가 이미 로드되어 있는지 확인
+                const existingScript = document.querySelector('script[src="js/admin-lucky-draw.js"]');
+                if (!existingScript) {
+                    // 스크립트 로드
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'js/admin-lucky-draw.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    console.log('[Admin] 뽑기 관리 스크립트 로드 완료');
+                }
+                
+                // 잠시 대기 후 모듈 확인 및 초기화
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                if (typeof loadLuckyDrawModule !== 'undefined') {
+                    console.log('[Admin] 뽑기 관리 모듈 함수 확인됨');
+                    log('뽑기 관리 모듈 로딩 완료', 'success');
+                } else {
+                    console.error('[Admin] 뽑기 관리 모듈을 찾을 수 없음');
+                    log('뽑기 관리 모듈을 찾을 수 없음', 'error');
+                }
+                
+            } catch (error) {
+                console.error('[Admin] 뽑기 관리 모듈 로딩 실패:', error);
+                log(`뽑기 관리 모듈 로딩 실패: ${error.message}`, 'error');
+            }
+        }
+
+        // 메시지 인터페이스 표시 함수 (비동기)
+        async function showMessagesInterface() {
+            const modalContainer = document.getElementById('modalContainer');
+            
+            modalContainer.innerHTML = `
+                <!-- 메시지 전송 모달 -->
+                <div id="messagesModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-y-auto m-4">
+                        <!-- 헤더 -->
+                        <div class="bg-pink-500 text-white p-6 rounded-t-lg">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold">
+                                    <i class="fas fa-envelope mr-3"></i>선생님 메시지 전송
+                                </h2>
+                                <button onclick="closeMessagesModal()" class="text-white hover:text-gray-200 transition">
+                                    <i class="fas fa-times text-2xl"></i>
+                                </button>
+                            </div>
+                            <p class="mt-2 text-pink-100">학생들에게 개별, 학급별, 또는 전체 메시지를 전송할 수 있습니다.</p>
+                        </div>
+
+                        <!-- 메인 컨텐츠 -->
+                        <div class="p-6">
+                            <!-- 탭 네비게이션 -->
+                            <div class="flex mb-6 border-b">
+                                <button id="individualTab" onclick="switchMessageTab('individual')" class="px-4 py-2 font-semibold text-pink-500 border-b-2 border-pink-500">
+                                    <i class="fas fa-user mr-2"></i>개별 전송
+                                </button>
+                                <button id="classTab" onclick="switchMessageTab('class')" class="px-4 py-2 font-semibold text-gray-500 hover:text-pink-500 transition ml-4">
+                                    <i class="fas fa-users mr-2"></i>학급별 전송
+                                </button>
+                                <button id="allTab" onclick="switchMessageTab('all')" class="px-4 py-2 font-semibold text-gray-500 hover:text-pink-500 transition ml-4">
+                                    <i class="fas fa-broadcast-tower mr-2"></i>전체 전송
+                                </button>
+                                <button id="repliesTab" onclick="switchMessageTab('replies')" class="px-4 py-2 font-semibold text-gray-500 hover:text-pink-500 transition ml-4">
+                                    <i class="fas fa-reply mr-2"></i>답장확인
+                                </button>
+                            </div>
+
+                            <!-- 개별 전송 -->
+                            <div id="individualContent" class="tab-content">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <h3 class="text-lg font-semibold text-blue-700 mb-3">
+                                        <i class="fas fa-user text-blue-500 mr-2"></i>개별 학생에게 메시지 전송
+                                    </h3>
+                                    
+                                    <!-- 단계적 선택 UI -->
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <!-- 1단계: 학년 선택 -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                <i class="fas fa-graduation-cap text-blue-500 mr-1"></i>1단계: 학년 선택
+                                            </label>
+                                            <select id="individualGradeSelect" 
+                                                    onchange="updateIndividualClassOptions()" 
+                                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                <option value="">학년을 선택하세요</option>
+                                                <option value="1">1학년</option>
+                                                <option value="2">2학년</option>
+                                                <option value="3">3학년</option>
+                                                <option value="4">4학년</option>
+                                                <option value="5">5학년</option>
+                                                <option value="6">6학년</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- 2단계: 학급 선택 -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                <i class="fas fa-users text-green-500 mr-1"></i>2단계: 학급 선택
+                                            </label>
+                                            <select id="individualClassSelect" 
+                                                    onchange="updateIndividualStudentOptions()" 
+                                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+                                                    disabled>
+                                                <option value="">먼저 학년을 선택하세요</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- 3단계: 학생 선택 -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                <i class="fas fa-user text-purple-500 mr-1"></i>3단계: 학생 선택
+                                            </label>
+                                            <select id="individualStudentSelect" 
+                                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
+                                                    disabled>
+                                                <option value="">먼저 학급을 선택하세요</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 선택된 학생 정보 표시 -->
+                                    <div id="selectedStudentInfo" class="hidden mb-4 p-3 bg-white border border-blue-200 rounded-lg">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                            <span class="font-medium text-gray-700">선택된 학생:</span>
+                                            <span id="selectedStudentName" class="ml-2 font-semibold text-blue-600"></span>
+                                            <span id="selectedStudentClass" class="ml-2 text-sm text-gray-500"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">메시지 내용</label>
+                                        <textarea id="individualMessage" rows="4" placeholder="학생에게 전달할 메시지를 입력하세요..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none"></textarea>
+                                    </div>
+                                    
+                                    <button onclick="messagesModule.sendIndividual()" class="w-full bg-pink-500 text-white py-3 px-6 rounded-lg hover:bg-pink-600 transition font-semibold">
+                                        <i class="fas fa-paper-plane mr-2"></i>개별 메시지 전송
+                                    </button>
+                                    
+                                    <div id="individualSendStatus" class="mt-2 text-xs"></div>
+                                </div>
+                            </div>
+
+                            <!-- 학급별 전송 -->
+                            <div id="classContent" class="tab-content hidden">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                    <h3 class="text-lg font-semibold text-green-700 mb-3">
+                                        <i class="fas fa-users text-green-500 mr-2"></i>학급별 일괄 메시지 전송
+                                    </h3>
+                                    
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">학급 선택</label>
+                                        <select id="classSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                            <option value="">학급을 선택하세요</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">메시지 내용</label>
+                                        <textarea id="classMessage" rows="4" placeholder="학급 전체에게 전달할 메시지를 입력하세요..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none"></textarea>
+                                    </div>
+                                    
+                                    <button onclick="messagesModule.sendClass()" class="w-full bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition font-semibold">
+                                        <i class="fas fa-users mr-2"></i>학급별 메시지 전송
+                                    </button>
+                                    
+                                    <div id="classSendStatus" class="mt-2 text-xs"></div>
+                                </div>
+                            </div>
+
+                            <!-- 전체 전송 -->
+                            <div id="allContent" class="tab-content hidden">
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                                    <h3 class="text-lg font-semibold text-purple-700 mb-3">
+                                        <i class="fas fa-broadcast-tower text-purple-500 mr-2"></i>전체 학생 일괄 메시지 전송
+                                    </h3>
+                                    
+                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+                                            <span class="text-sm text-yellow-700">
+                                                전체 <span id="totalStudentsCount" class="font-bold">0</span>명의 학생에게 메시지가 전송됩니다.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">메시지 내용</label>
+                                        <textarea id="allStudentsMessage" rows="4" placeholder="전체 학생에게 전달할 메시지를 입력하세요..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none"></textarea>
+                                    </div>
+                                    
+                                    <button onclick="messagesModule.sendAllStudents()" class="w-full bg-purple-500 text-white py-3 px-6 rounded-lg hover:bg-purple-600 transition font-semibold">
+                                        <i class="fas fa-broadcast-tower mr-2"></i>전체 학생에게 메시지 전송
+                                    </button>
+                                    
+                                    <div id="allStudentsSendStatus" class="mt-2 text-xs"></div>
+                                </div>
+                            </div>
+
+                            <!-- 답장 확인 -->
+                            <div id="repliesContent" class="tab-content hidden">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <h3 class="text-lg font-semibold text-blue-700 mb-3">
+                                        <i class="fas fa-reply text-blue-500 mr-2"></i>학생 답장 확인
+                                    </h3>
+                                    <p class="text-sm text-gray-600 mb-4">학생들이 보낸 답장을 확인할 수 있습니다.</p>
+                                    
+                                    <div class="flex justify-between items-center mb-4">
+                                        <div class="text-sm">
+                                            총 <span id="repliesCount" class="font-bold text-blue-600">0</span>개의 답장
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <button onclick="loadStudentReplies()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition text-sm">
+                                                <i class="fas fa-sync-alt mr-1"></i>새로고침
+                                            </button>
+                                            <!-- 안전한 일괄삭제 버튼 (이벤트 전파 방지) -->
+                                            <button id="safeDeleteAllBtn" onclick="safeDeleteAllConversations(event)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition text-sm">
+                                                <i class="fas fa-trash-alt mr-1"></i>대화 일괄삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 답장 목록 -->
+                                    <div id="repliesList" class="space-y-3 max-h-96 overflow-y-auto">
+                                        <div class="text-center py-8 text-gray-500">
+                                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                            <p>답장을 불러오는 중...</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="repliesStatus" class="mt-4 text-xs text-center"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 푸터 -->
+                        <div class="bg-gray-50 px-6 py-4 rounded-b-lg">
+                            <div class="flex justify-between items-center">
+                                <div class="text-sm text-gray-600">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    전송된 메시지는 학생페이지 선생님쪽지함에 실시간으로 표시됩니다.
+                                </div>
+                                <button onclick="messagesModule.refreshStudents()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">
+                                    <i class="fas fa-sync-alt mr-2"></i>학생 목록 새로고침
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // DOM이 완전히 생성된 후 잠시 대기
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // 모듈이 이미 초기화되었는지 확인
+            if (window.messagesModule && window.messagesModule.currentStudents) {
+                console.log('[Admin] 메시지 모듈이 이미 초기화되어 있음');
+                log(`메시지 모듈 준비 완료 - 학생 수: ${window.messagesModule.currentStudents.length}명`, 'success');
+            } else if (window.messagesModule) {
+                console.log('[Admin] 메시지 모듈 발견, 재초기화 시도...');
+                try {
+                    await window.messagesModule.initialize();
+                    console.log('[Admin] 메시지 모듈 재초기화 완료');
+                    log('메시지 모듈 재초기화 완료', 'success');
+                } catch (error) {
+                    console.error('[Admin] 메시지 모듈 재초기화 실패:', error);
+                    log(`메시지 모듈 재초기화 실패: ${error.message}`, 'error');
+                }
+            } else {
+                console.error('[Admin] 메시지 모듈을 찾을 수 없음');
+                log('메시지 모듈을 찾을 수 없음', 'error');
+            }
+        }
+
+        // 메시지 모달 닫기
+        function closeMessagesModal() {
+            const modal = document.getElementById('messagesModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 포인트 인터페이스 표시 함수
+        async function showPointsInterface() {
+            const modalContainer = document.getElementById('modalContainer');
+            
+            modalContainer.innerHTML = `
+                <!-- 포인트 관리 모달 -->
+                <div id="pointsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                    <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-screen overflow-y-auto m-4">
+                        <!-- 헤더 -->
+                        <div class="bg-blue-500 text-white p-6 rounded-t-lg">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold">
+                                    <i class="fas fa-coins mr-3"></i>포인트 관리
+                                </h2>
+                                <button onclick="closePointsModal()" class="text-white hover:text-gray-200 transition">
+                                    <i class="fas fa-times text-2xl"></i>
+                                </button>
+                            </div>
+                            <p class="mt-2 text-blue-100">학생들의 포인트 현황을 확인하고 포인트를 지급할 수 있습니다.</p>
+                        </div>
+
+                        <!-- 메인 컨텐츠 -->
+                        <div class="p-6">
+                            <!-- 탭 네비게이션 -->
+                            <div class="flex space-x-1 mb-6 border-b">
+                                <button id="pointsManagementTab" onclick="switchPointsTab('management')" class="px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-600">
+                                    <i class="fas fa-users mr-2"></i>포인트 현황
+                                </button>
+                                <button id="classGoalsTab" onclick="switchPointsTab('goals')" class="px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                                    <i class="fas fa-trophy mr-2"></i>학급 목표 설정
+                                </button>
+                            </div>
+
+                            <!-- 포인트 현황 탭 내용 -->
+                            <div id="pointsManagementContent">
+                            <!-- 상단 통계 및 컨트롤 -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                                    <i class="fas fa-users text-2xl text-blue-500 mb-2"></i>
+                                    <div class="text-sm text-gray-600">접속한 학생</div>
+                                    <div class="text-2xl font-bold text-blue-600" id="totalPointsCount">0</div>
+                                </div>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                                    <i class="fas fa-sync-alt text-2xl text-green-500 mb-2"></i>
+                                    <div class="text-sm text-gray-600 mb-2">자동 새로고침</div>
+                                    <button onclick="window.pointsModule.loadAllStudentPoints()" class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600 transition">
+                                        <i class="fas fa-refresh mr-1"></i>새로고침
+                                    </button>
+                                </div>
+                                
+                                <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                                    <i class="fas fa-trash-alt text-2xl text-red-500 mb-2"></i>
+                                    <div class="text-sm text-gray-600 mb-2">포인트 초기화</div>
+                                    <button onclick="window.pointsModule.resetAllPoints()" class="bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600 transition">
+                                        <i class="fas fa-redo mr-1"></i>전체 리셋
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 학생 포인트 목록 -->
+                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-800">
+                                        <i class="fas fa-list mr-2"></i>학생 포인트 현황
+                                    </h3>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fas fa-clock mr-1"></i>5초마다 자동 갱신
+                                    </div>
+                                </div>
+                                
+                                <div id="studentPointsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                                    <div class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <p>포인트 현황을 불러오는 중...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 포인트 지급 영역 -->
+                            <div id="givePointSection" class="hidden bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-green-800">
+                                        <i class="fas fa-plus mr-2"></i>포인트 지급
+                                    </h3>
+                                    <button onclick="closeGivePointSection()" class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-times text-lg"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">선택된 학생</label>
+                                        <div class="text-lg font-semibold text-blue-600" id="selectedStudentName">-</div>
+                                        <input type="hidden" id="selectedStudentId">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">지급할 포인트</label>
+                                        <input type="number" id="pointsToGive" min="1" max="10" value="1" 
+                                               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    </div>
+                                    
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">지급 사유</label>
+                                        <input type="text" id="pointMessage" placeholder="예: 수업 참여 우수, 과제 완료 등" 
+                                               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <div id="givePointStatus" class="text-sm"></div>
+                                    
+                                    <div class="flex space-x-3">
+                                        <button onclick="closeGivePointSection()" class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition">
+                                            취소
+                                        </button>
+                                        <button onclick="executeGivePointFromSection()" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition">
+                                            <i class="fas fa-check mr-1"></i>지급하기
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 상태 메시지 -->
+                            <div id="pointsStatus" class="text-center text-sm"></div>
+                            </div>
+
+                            <!-- 학급 목표 설정 탭 내용 -->
+                            <div id="classGoalsContent" style="display: none;">
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-trophy text-2xl text-yellow-500 mr-3"></i>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-yellow-800">학급별 우리반 포인트 목표 설정</h3>
+                                            <p class="text-sm text-yellow-700">각 학급의 게이지바 만점값을 설정하여 포인트 인플레이션에 대응하세요.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 학급 목표 설정 리스트 -->
+                                <div class="space-y-4">
+                                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h4 class="text-lg font-semibold text-gray-800">
+                                                <i class="fas fa-school mr-2 text-blue-500"></i>학급별 목표 포인트
+                                            </h4>
+                                            <button onclick="loadClassGoals()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 transition">
+                                                <i class="fas fa-sync-alt mr-1"></i>새로고침
+                                            </button>
+                                        </div>
+
+                                        <!-- 학급 목표 목록 -->
+                                        <div id="classGoalsList" class="space-y-3">
+                                            <div class="text-center text-gray-500 py-4">
+                                                <i class="fas fa-spinner fa-spin mr-2"></i>학급 목표 정보를 불러오는 중...
+                                            </div>
+                                        </div>
+
+                                        <!-- 새 학급 추가 -->
+                                        <div class="mt-6 pt-4 border-t border-gray-200">
+                                            <h5 class="font-medium text-gray-800 mb-3">새 학급 목표 추가</h5>
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">학급명</label>
+                                                    <input type="text" id="newClassName" placeholder="예: 3-1" 
+                                                           class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">목표 포인트</label>
+                                                    <input type="number" id="newClassGoal" min="10" max="1000" value="200" 
+                                                           class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                </div>
+                                                <div class="flex items-end">
+                                                    <button onclick="addNewClassGoal()" class="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition">
+                                                        <i class="fas fa-plus mr-1"></i>추가
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 상태 메시지 -->
+                                <div id="classGoalsStatus" class="text-center text-sm mt-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // DOM이 완전히 생성된 후 잠시 대기
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // 모듈이 이미 초기화되었는지 확인
+            if (window.pointsModule) {
+                console.log('[Admin] 포인트 모듈이 이미 초기화되어 있음');
+                log('포인트 모듈 준비 완료', 'success');
+            } else {
+                console.error('[Admin] 포인트 모듈을 찾을 수 없음');
+                log('포인트 모듈을 찾을 수 없음', 'error');
+            }
+        }
+
+        // 포인트 모달 닫기
+        function closePointsModal() {
+            const modal = document.getElementById('pointsModal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // 자동 새로고침 중지
+            if (window.pointsModule) {
+                window.pointsModule.stopRefresh();
+            }
+        }
+
+        // 포인트 관리 탭 전환
+        function switchPointsTab(tabName) {
+            // 탭 버튼 스타일 업데이트
+            const managementTab = document.getElementById('pointsManagementTab');
+            const goalsTab = document.getElementById('classGoalsTab');
+            const managementContent = document.getElementById('pointsManagementContent');
+            const goalsContent = document.getElementById('classGoalsContent');
+
+            if (tabName === 'management') {
+                managementTab.className = 'px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-600';
+                goalsTab.className = 'px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+                managementContent.style.display = 'block';
+                goalsContent.style.display = 'none';
+            } else if (tabName === 'goals') {
+                managementTab.className = 'px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+                goalsTab.className = 'px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-600';
+                managementContent.style.display = 'none';
+                goalsContent.style.display = 'block';
+                
+                // 학급 목표 탭으로 전환 시 데이터 로드
+                loadClassGoals();
+            }
+        }
+
+        // === 학급 목표 관리 함수들 ===
+        
+        // 학급 목표 리스트 로드
+        async function loadClassGoals() {
+            const statusEl = document.getElementById('classGoalsStatus');
+            const listEl = document.getElementById('classGoalsList');
+            
+            try {
+                statusEl.textContent = '학급 목표 정보를 불러오는 중...';
+                statusEl.className = 'text-center text-sm mt-4 text-blue-600';
+                
+                // class_point_goals 테이블에서 데이터 조회
+                const response = await smartFetch('tables/class_point_goals');
+                const result = await response.json();
+                
+                if (result.data && Array.isArray(result.data)) {
+                    displayClassGoals(result.data);
+                    statusEl.textContent = `${result.data.length}개 학급 목표 로드 완료`;
+                    statusEl.className = 'text-center text-sm mt-4 text-green-600';
+                } else {
+                    throw new Error('Invalid data format');
+                }
+                
+            } catch (error) {
+                console.error('[ClassGoals] 로드 오류:', error);
+                listEl.innerHTML = '<div class="text-center text-red-500 py-4">학급 목표 정보를 불러올 수 없습니다.</div>';
+                statusEl.textContent = '로드 실패: ' + error.message;
+                statusEl.className = 'text-center text-sm mt-4 text-red-600';
+            }
+        }
+        
+        // 학급 목표 리스트 표시
+        function displayClassGoals(goals) {
+            const listEl = document.getElementById('classGoalsList');
+            
+            if (goals.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center text-gray-500 py-6">
+                        <i class="fas fa-inbox text-3xl mb-2"></i>
+                        <p>설정된 학급 목표가 없습니다.</p>
+                        <p class="text-sm">아래에서 새 학급 목표를 추가해보세요.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const goalsHtml = goals.map(goal => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-school text-blue-600"></i>
+                        </div>
+                        <div>
+                            <div class="font-medium text-gray-800">${goal.class_name}</div>
+                            <div class="text-sm text-gray-600">목표: ${goal.max_points}포인트</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="number" id="goal_${goal.id}" value="${goal.max_points}" min="10" max="1000" 
+                               class="w-20 border border-gray-300 rounded px-2 py-1 text-center text-sm">
+                        <button onclick="updateClassGoal('${goal.id}', '${goal.class_name}')" 
+                                class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition">
+                            <i class="fas fa-save"></i>
+                        </button>
+                        <button onclick="deleteClassGoal('${goal.id}', '${goal.class_name}')" 
+                                class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            listEl.innerHTML = goalsHtml;
+        }
+        
+        // 새 학급 목표 추가
+        async function addNewClassGoal() {
+            const classNameEl = document.getElementById('newClassName');
+            const classGoalEl = document.getElementById('newClassGoal');
+            const statusEl = document.getElementById('classGoalsStatus');
+            
+            const className = classNameEl.value.trim();
+            const maxPoints = parseInt(classGoalEl.value);
+            
+            if (!className) {
+                statusEl.textContent = '학급명을 입력해주세요.';
+                statusEl.className = 'text-center text-sm mt-4 text-red-600';
+                return;
+            }
+            
+            if (maxPoints < 10 || maxPoints > 1000) {
+                statusEl.textContent = '목표 포인트는 10~1000 사이로 설정해주세요.';
+                statusEl.className = 'text-center text-sm mt-4 text-red-600';
+                return;
+            }
+            
+            try {
+                statusEl.textContent = '학급 목표 추가 중...';
+                statusEl.className = 'text-center text-sm mt-4 text-blue-600';
+                
+                const response = await smartFetch('tables/class_point_goals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        class_name: className,
+                        max_points: maxPoints
+                    })
+                });
+                
+                if (response.ok) {
+                    classNameEl.value = '';
+                    classGoalEl.value = '200';
+                    statusEl.textContent = `${className} 학급 목표가 추가되었습니다.`;
+                    statusEl.className = 'text-center text-sm mt-4 text-green-600';
+                    
+                    // 목록 새로고침
+                    loadClassGoals();
+                } else {
+                    throw new Error('추가 실패');
+                }
+                
+            } catch (error) {
+                console.error('[ClassGoals] 추가 오류:', error);
+                statusEl.textContent = '학급 목표 추가 실패: ' + error.message;
+                statusEl.className = 'text-center text-sm mt-4 text-red-600';
+            }
+        }
+        
+        // 학급 목표 수정
+        async function updateClassGoal(goalId, className) {
+            const inputEl = document.getElementById(`goal_${goalId}`);
+            const statusEl = document.getElementById('classGoalsStatus');
+            const maxPoints = parseInt(inputEl.value);
+            
+            if (maxPoints < 10 || maxPoints > 1000) {
+                statusEl.textContent = '목표 포인트는 10~1000 사이로 설정해주세요.';
+                statusEl.className = 'text-center text-sm mt-4 text-red-600';
+                return;
+            }
+            
+            try {
+                statusEl.textContent = '목표 포인트 수정 중...';
+                statusEl.className = 'text-center text-sm mt-4 text-blue-600';
+                
+                const response = await smartFetch(`tables/class_point_goals/${goalId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        class_name: className,
+                        max_points: maxPoints
+                    })
+                });
+                
+                if (response.ok) {
+                    statusEl.textContent = `${className} 학급 목표가 ${maxPoints}포인트로 수정되었습니다.`;
+                    statusEl.className = 'text-center text-sm mt-4 text-green-600';
+                } else {
+                    throw new Error('수정 실패');
+                }
+                
+            } catch (error) {
+                console.error('[ClassGoals] 수정 오류:', error);
+                statusEl.textContent = '목표 포인트 수정 실패: ' + error.message;
+                statusEl.className = 'text-center text-sm mt-4 text-red-600';
+            }
+        }
+        
+        // 학급 목표 삭제
+        async function deleteClassGoal(goalId, className) {
+            if (!confirm(`${className} 학급의 목표 설정을 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            const statusEl = document.getElementById('classGoalsStatus');
+            
+            try {
+                statusEl.textContent = '학급 목표 삭제 중...';
+                statusEl.className = 'text-center text-sm mt-4 text-blue-600';
+                
+                const response = await smartFetch(`tables/class_point_goals/${goalId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    statusEl.textContent = `${className} 학급 목표가 삭제되었습니다.`;
+                    statusEl.className = 'text-center text-sm mt-4 text-green-600';
+                    
+                    // 목록 새로고침
+                    loadClassGoals();
+                } else {
+                    throw new Error('삭제 실패');
+                }
+                
+            } catch (error) {
+                console.error('[ClassGoals] 삭제 오류:', error);
+                statusEl.textContent = '학급 목표 삭제 실패: ' + error.message;
+                statusEl.className = 'text-center text-sm mt-4 text-red-600';
+            }
+        }
+
+        // 포인트 지급 섹션 관련 전역 함수들
+        function openGivePointSection(studentId, studentName) {
+            if (window.pointsModule && window.pointsModule.openGivePointSection) {
+                window.pointsModule.openGivePointSection(studentId, studentName);
+            }
+        }
+        
+        function closeGivePointSection() {
+            if (window.pointsModule && window.pointsModule.closeGivePointSection) {
+                window.pointsModule.closeGivePointSection();
+            }
+        }
+        
+        function executeGivePointFromSection() {
+            if (window.pointsModule && window.pointsModule.executeGivePointFromSection) {
+                window.pointsModule.executeGivePointFromSection();
+            }
+        }
+
+
+
+
+
+        // 메시지 탭 전환
+        function switchMessageTab(tabName) {
+            // 모든 탭 비활성화
+            ['individual', 'class', 'all', 'replies'].forEach(tab => {
+                const tabButton = document.getElementById(tab + 'Tab');
+                const tabContent = document.getElementById(tab + 'Content');
+                
+                if (tabButton) {
+                    if (tab === tabName) {
+                        tabButton.className = 'px-4 py-2 font-semibold text-pink-500 border-b-2 border-pink-500';
+                    } else {
+                        tabButton.className = 'px-4 py-2 font-semibold text-gray-500 hover:text-pink-500 transition ml-4';
+                    }
+                }
+                
+                if (tabContent) {
+                    if (tab === tabName) {
+                        tabContent.classList.remove('hidden');
+                    } else {
+                        tabContent.classList.add('hidden');
+                    }
+                }
+            });
+            
+            // 답장확인 탭이 선택되었을 때 답장 로드
+            if (tabName === 'replies') {
+                loadStudentReplies();
+            }
+        }
+
+        // ========== 답장 확인 기능 ==========
+        
+        // 학생 답장 로드
+        async function loadStudentReplies() {
+            const repliesCountElement = document.getElementById('repliesCount');
+            const repliesList = document.getElementById('repliesList');
+            const repliesStatus = document.getElementById('repliesStatus');
+            
+            if (!repliesList) return;
+            
+            try {
+                // 로딩 상태 표시
+repliesList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p>답장을 불러오는 중...</p>
+                    </div>
+                `;
+                
+                // REST API로 답장 데이터 로드 (smartFetch 사용)
+                console.log('[LoadReplies] smartFetch로 답장 목록 새로고침 시작');
+                const response = await smartFetch('tables/teacher_messages?limit=100&sort=sent_at');
+                const data = await response.json();
+                
+                if (data && data.data) {
+                    // 학생이 보낸 메시지만 필터링 (답장)
+                    const studentReplies = data.data.filter(message => 
+                        message.sender_type === 'student'
+                    ).sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at)); // 최신순
+                    
+                    console.log(`[Replies] 총 ${studentReplies.length}개 답장 로드됨`);
+                    
+                    // 카운트 업데이트
+                    if (repliesCount) {
+                        repliesCountElement.textContent = studentReplies.length;
+                    }
+                    
+                    // 답장 목록 표시
+                    if (studentReplies.length === 0) {
+        repliesList.innerHTML = `
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-4"></i>
+                                <p>학생 답장이 없습니다.</p>
+                            </div>
+                        `;
+                    } else {
+        repliesList.innerHTML = studentReplies.map(reply => {
+                            const sentAt = new Date(reply.sent_at);
+                            const timeAgo = formatTimeAgo(sentAt);
+                            const isUnread = !reply.is_read;
+                            
+                            return `
+                                <div class="border rounded-lg p-3 ${isUnread ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'}">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="flex items-center">
+                                            <div class="w-6 h-6 rounded-full ${isUnread ? 'bg-blue-500' : 'bg-gray-400'} flex items-center justify-center mr-2">
+                                                <i class="fas fa-user text-white text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <span class="font-medium text-sm">${reply.sender_name || '학생'}</span>
+                                                ${isUnread ? '<span class="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">새답장</span>' : ''}
+                                            </div>
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            ${timeAgo}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 rounded p-2 mb-2">
+                                        <div class="text-sm text-gray-700">${reply.message || '내용 없음'}</div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center text-xs text-gray-500">
+                                        <div>ID: ${reply.sender_id}</div>
+                                        <div>${sentAt.toLocaleString('ko-KR')}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    
+                    showRepliesStatus('답장을 성공적으로 불러왔습니다.', 'success');
+                    
+                } else {
+                    throw new Error('데이터 형식 오류');
+                }
+                
+            } catch (error) {
+                console.error('[Replies] 답장 로드 실패:', error);
+                
+repliesList.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>답장을 불러오는 중 오류가 발생했습니다.</p>
+                        <button onclick="loadStudentReplies()" class="mt-2 text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                            다시 시도
+                        </button>
+                    </div>
+                `;
+                
+                showRepliesStatus(`오류: ${error.message}`, 'error');
+            }
+        }
+        
+        // 상대 시간 포맷
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return '방금 전';
+            if (diffMins < 60) return `${diffMins}분 전`;
+            if (diffHours < 24) return `${diffHours}시간 전`;
+            if (diffDays < 7) return `${diffDays}일 전`;
+            return date.toLocaleDateString('ko-KR');
+        }
+        
+        // 안전한 대화 일괄 삭제 함수 (이벤트 전파 방지)
+        async function safeDeleteAllConversations(event) {
+            // 이벤트 전파 완전 차단
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+            }
+            
+            console.log('[SafeDelete] 안전한 대화 일괄삭제 시작');
+            
+            // 확인 대화상자
+            const confirmMessage = '정말로 선택된 학생과의 모든 대화를 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.\n⚠️ 교사 메시지와 학생 답장이 모두 영구히 삭제됩니다.';
+            
+            if (!confirm(confirmMessage)) {
+                console.log('[SafeDelete] 사용자가 취소함');
+                return;
+            }
+            
+            const repliesContainer = document.getElementById('repliesList');
+            const repliesCounter = document.getElementById('repliesCount');
+            
+            try {
+                showRepliesStatus('답장 삭제 중...', 'info');
+                
+                // 1. 현재 모든 학생 답장 조회 (안전하게)
+                console.log('[SafeDelete] 학생 답장 조회 시작...');
+                const response = await smartFetch('tables/teacher_messages?limit=1000');
+                const data = await response.json();
+                
+                if (!response.ok || !data.data) {
+                    throw new Error(`답장 조회 실패: ${response.status}`);
+                }
+                
+                // 2. 학생이 보낸 메시지만 필터링
+                const studentReplies = data.data.filter(message => 
+                    message.sender_type === 'student'
+                );
+                
+                // 3. 답장과 연결된 교사 메시지 찾기
+                const teacherMessageIds = new Set();
+                studentReplies.forEach(reply => {
+                    if (reply.reply_to) {
+                        teacherMessageIds.add(reply.reply_to);
+                    }
+                });
+                
+                const teacherMessages = data.data.filter(message => 
+                    message.sender_type === 'teacher' && teacherMessageIds.has(message.id)
+                );
+                
+                console.log(`[SafeDelete] 삭제할 답장 수: ${studentReplies.length}개`);
+                console.log(`[SafeDelete] 삭제할 교사 메시지 수: ${teacherMessages.length}개`);
+                
+                if (studentReplies.length === 0) {
+                    showRepliesStatus('삭제할 대화가 없습니다.', 'info');
+                    return;
+                }
+                
+                // 4. 먼저 학생 답장들을 삭제
+                let deletedReplies = 0;
+                let deletedTeacherMessages = 0;
+                let errorCount = 0;
+                const totalItems = studentReplies.length + teacherMessages.length;
+                
+                for (const reply of studentReplies) {
+                    try {
+                        console.log(`[SafeDelete] 답장 삭제 시도: ${reply.id} - "${reply.message}"`);
+                        
+                        // 상태 메시지 업데이트
+                        showRepliesStatus(`답장 삭제 중... (${deletedReplies + 1}/${studentReplies.length})`, 'info');
+                        
+                        const deleteResponse = await smartFetch(`tables/teacher_messages/${reply.id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (deleteResponse.ok) {
+                            deletedReplies++;
+                            console.log(`[SafeDelete] ✅ 답장 삭제 성공: ${reply.id}`);
+                        } else {
+                            errorCount++;
+                            const errorData = await deleteResponse.json().catch(() => ({}));
+                            console.error(`[SafeDelete] ❌ 답장 삭제 실패: ${reply.id} (${deleteResponse.status})`, errorData);
+                        }
+                        
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`[SafeDelete] 답장 삭제 예외: ${reply.id} - ${error.message}`, error);
+                    }
+                    
+                    // 각 삭제 작업 간 약간의 대기 시간
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // 5. 이어서 교사 메시지들을 삭제
+                for (const teacherMsg of teacherMessages) {
+                    try {
+                        console.log(`[SafeDelete] 교사 메시지 삭제 시도: ${teacherMsg.id} - "${teacherMsg.message}"`);
+                        
+                        // 상태 메시지 업데이트
+                        showRepliesStatus(`교사 메시지 삭제 중... (${deletedTeacherMessages + 1}/${teacherMessages.length})`, 'info');
+                        
+                        const deleteResponse = await smartFetch(`tables/teacher_messages/${teacherMsg.id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (deleteResponse.ok) {
+                            deletedTeacherMessages++;
+                            console.log(`[SafeDelete] ✅ 교사 메시지 삭제 성공: ${teacherMsg.id}`);
+                        } else {
+                            errorCount++;
+                            const errorData = await deleteResponse.json().catch(() => ({}));
+                            console.error(`[SafeDelete] ❌ 교사 메시지 삭제 실패: ${teacherMsg.id} (${deleteResponse.status})`, errorData);
+                        }
+                        
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`[SafeDelete] 교사 메시지 삭제 예외: ${teacherMsg.id} - ${error.message}`, error);
+                    }
+                    
+                    // 각 삭제 작업 간 약간의 대기 시간
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // 6. 결과 표시
+                const totalDeleted = deletedReplies + deletedTeacherMessages;
+                if (totalDeleted > 0) {
+                    showRepliesStatus(`✅ 대화 삭제 완료: 답장 ${deletedReplies}개, 교사 메시지 ${deletedTeacherMessages}개 ${errorCount > 0 ? `(실패 ${errorCount}개)` : ''}`, 'success');
+                    
+                    // 7. 답장 목록 새로고침 (안전하게)
+                    await loadStudentReplies();
+                    
+                    console.log(`[SafeDelete] 대화 일괄 삭제 완료: 답장 ${deletedReplies}개, 교사 메시지 ${deletedTeacherMessages}개, 실패 ${errorCount}개`);
+                } else {
+                    throw new Error('모든 대화 삭제에 실패했습니다');
+                }
+                
+            } catch (error) {
+                console.error('[SafeDelete] 대화 일괄 삭제 실패:', error);
+                showRepliesStatus(`❌ 대화 삭제 실패: ${error.message}`, 'error');
+                
+                // 오류 시에도 목록 새로고침
+                await loadStudentReplies();
+            }
+        }
+        
+        // 답장 상태 메시지 표시
+        function showRepliesStatus(message, type = 'info') {
+            const statusElement = document.getElementById('repliesStatus');
+            if (!statusElement) return;
+            
+            const colors = {
+                success: 'text-green-600',
+                error: 'text-red-600',
+                info: 'text-blue-600'
+            };
+            
+            statusElement.innerHTML = `<span class="${colors[type] || colors.info}">${message}</span>`;
+            
+            // 3초 후 자동 사라짐
+            setTimeout(() => {
+                if (statusElement) {
+                    statusElement.innerHTML = '';
+                }
+            }, 3000);
+        }
+
+        // ========== 개별 메시지 단계적 선택 함수들 ==========
+        
+        // 학년 선택 시 학급 옵션 업데이트
+        function updateIndividualClassOptions() {
+            console.log('[Messages] updateIndividualClassOptions 함수 호출됨');
+            
+            const gradeSelect = document.getElementById('individualGradeSelect');
+            const classSelect = document.getElementById('individualClassSelect');
+            const studentSelect = document.getElementById('individualStudentSelect');
+            const selectedInfo = document.getElementById('selectedStudentInfo');
+            
+            if (!gradeSelect || !classSelect || !studentSelect) {
+                console.error('[Messages] 필요한 DOM 요소를 찾을 수 없음');
+                return;
+            }
+            
+            const selectedGrade = gradeSelect.value;
+            console.log(`[Messages] 선택된 학년: "${selectedGrade}"`);
+            
+            // 학급 선택 초기화
+            classSelect.innerHTML = '<option value="">학급을 선택하세요</option>';
+            studentSelect.innerHTML = '<option value="">먼저 학급을 선택하세요</option>';
+            studentSelect.disabled = true;
+            if (selectedInfo) selectedInfo.classList.add('hidden');
+            
+            if (selectedGrade) {
+                console.log('[Messages] 메시지 모듈 상태 체크...');
+                console.log('window.messagesModule exists:', !!window.messagesModule);
+                console.log('window.messagesModule.currentStudents exists:', !!window.messagesModule?.currentStudents);
+                console.log('currentStudents length:', window.messagesModule?.currentStudents?.length || 0);
+                
+                if (window.messagesModule && window.messagesModule.currentStudents) {
+                    const allStudents = window.messagesModule.currentStudents;
+                    console.log(`[Messages] 전체 학생 수: ${allStudents.length}`);
+                    
+                    // 첫 번째 학생 데이터 구조 확인
+                    if (allStudents.length > 0) {
+                        console.log(`[Messages] 첫 번째 학생 데이터:`, allStudents[0]);
+                    }
+                    
+                    const gradeStudents = allStudents.filter(student => {
+                        const studentGrade = student.grade || extractGradeFromClass(student.full_class || student.fullClass);
+                        const match = studentGrade == selectedGrade;
+                        if (match) {
+                            console.log(`[Messages] 매칭된 학생:`, student);
+                        }
+                        return match;
+                    });
+                    
+                    console.log(`[Messages] ${selectedGrade}학년 학생 수: ${gradeStudents.length}`);
+                    
+                    if (gradeStudents.length > 0) {
+                        // 학급 목록 추출
+                        const classes = [...new Set(gradeStudents.map(student => {
+                            const fullClass = student.full_class || student.fullClass || `${student.grade}-${student.classNum}`;
+                            console.log(`[Messages] 학생 ${student.id}의 학급: ${fullClass}`);
+                            return fullClass;
+                        }))].filter(cls => cls && cls !== 'undefined-undefined').sort();
+                        
+                        console.log(`[Messages] ${selectedGrade}학년 학급들:`, classes);
+                        
+                        if (classes.length > 0) {
+                            classes.forEach(cls => {
+                                const option = document.createElement('option');
+                                option.value = cls;
+                                option.textContent = cls;
+                                classSelect.appendChild(option);
+                                console.log(`[Messages] 드롭다운에 학급 추가: ${cls}`);
+                            });
+                            
+                            classSelect.disabled = false;
+                            console.log(`[Messages] 학급 선택 활성화됨`);
+                        } else {
+                            console.warn(`[Messages] ${selectedGrade}학년의 학급이 없음`);
+                            classSelect.innerHTML = '<option value="">해당 학년에 학급이 없습니다</option>';
+                        }
+                    } else {
+                        console.warn(`[Messages] ${selectedGrade}학년 학생이 없음`);
+                        classSelect.innerHTML = '<option value="">해당 학년에 학생이 없습니다</option>';
+                    }
+                } else {
+                    console.warn('[Messages] 학생 데이터가 로드되지 않음');
+                    console.log('- window.messagesModule:', window.messagesModule);
+                    console.log('- currentStudents:', window.messagesModule?.currentStudents);
+                    classSelect.innerHTML = '<option value="">학생 데이터를 로드 중...</option>';
+                }
+            } else {
+                classSelect.disabled = true;
+                classSelect.innerHTML = '<option value="">먼저 학년을 선택하세요</option>';
+                console.log('[Messages] 학년이 선택되지 않음');
+            }
+        }
+        
+        // 학급 선택 시 학생 옵션 업데이트
+        function updateIndividualStudentOptions() {
+            const gradeSelect = document.getElementById('individualGradeSelect');
+            const classSelect = document.getElementById('individualClassSelect');
+            const studentSelect = document.getElementById('individualStudentSelect');
+            const selectedInfo = document.getElementById('selectedStudentInfo');
+            
+            const selectedGrade = gradeSelect.value;
+            const selectedClass = classSelect.value;
+            
+            console.log(`[Messages] 선택된 학급: ${selectedClass}`);
+            
+            // 학생 선택 초기화
+            studentSelect.innerHTML = '<option value="">학생을 선택하세요</option>';
+            selectedInfo.classList.add('hidden');
+            
+            if (selectedClass) {
+                // 선택된 학급의 학생들 찾기
+                if (window.messagesModule && window.messagesModule.currentStudents) {
+                    const classStudents = window.messagesModule.currentStudents.filter(student => {
+                        const fullClass = student.full_class || student.fullClass || `${student.grade}-${student.classNum}`;
+                        return fullClass === selectedClass;
+                    });
+                    
+                    console.log(`[Messages] ${selectedClass} 학급 학생 수: ${classStudents.length}`);
+                    
+                    // 학생들을 이름순으로 정렬
+                    classStudents.sort((a, b) => a.name.localeCompare(b.name));
+                    
+                    classStudents.forEach(student => {
+                        const studentId = student.student_id || student.studentId || student.id;
+                        const option = document.createElement('option');
+                        option.value = studentId;
+                        option.setAttribute('data-name', student.name);
+                        option.setAttribute('data-class', selectedClass);
+                        option.textContent = `${student.name} (${studentId})`;
+                        studentSelect.appendChild(option);
+                    });
+                    
+                    studentSelect.disabled = false;
+                    
+                    // 학생 선택 시 정보 표시 이벤트 추가
+                    studentSelect.onchange = function() {
+                        const selectedOption = this.options[this.selectedIndex];
+                        if (selectedOption && selectedOption.value) {
+                            const studentName = selectedOption.getAttribute('data-name');
+                            const studentClass = selectedOption.getAttribute('data-class');
+                            
+                            document.getElementById('selectedStudentName').textContent = studentName;
+                            document.getElementById('selectedStudentClass').textContent = `(${studentClass})`;
+                            selectedInfo.classList.remove('hidden');
+                            
+                            console.log(`[Messages] 학생 선택됨: ${studentName} (${selectedOption.value})`);
+                        } else {
+                            selectedInfo.classList.add('hidden');
+                        }
+                    };
+                } else {
+                    console.warn('[Messages] 학생 데이터가 로드되지 않음');
+                    studentSelect.innerHTML = '<option value="">학생 데이터를 로드 중...</option>';
+                }
+            } else {
+                studentSelect.disabled = true;
+                studentSelect.innerHTML = '<option value="">먼저 학급을 선택하세요</option>';
+            }
+        }
+        
+        // 학급명에서 학년 추출 헬퍼 함수
+        function extractGradeFromClass(fullClass) {
+            if (!fullClass) return null;
+            const match = fullClass.match(/^(\d+)-/);
+            return match ? match[1] : null;
+        }
+
+        // ========== 기본 기능 ==========
+        function updateTime() {
+            const timeElement = document.getElementById('currentTime');
+            if (timeElement) {
+                timeElement.textContent = new Date().toLocaleString('ko-KR');
+            }
+        }
+        
+        function teacherLogout() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                sessionStorage.removeItem('teacherLoggedIn');
+                window.location.href = 'index.html';
+            }
+        }
+        
+        function checkTeacherAuth() {
+            const isLoggedIn = sessionStorage.getItem('teacherLoggedIn');
+            if (!isLoggedIn) {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ========== 초기화 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            log('페이지 로드 완료');
+            
+            // 권한 체크
+            checkTeacherAuth();
+            
+            // Supabase 초기화
+            setTimeout(() => {
+                if (typeof initSupabaseClient === 'function') {
+                    const initialized = initSupabaseClient();
+                    if (initialized) {
+                        log('Supabase 클라이언트 초기화 성공', 'success');
+                    } else {
+                        log('Supabase 클라이언트 초기화 실패', 'error');
+                    }
+                } else if (typeof initSupabase === 'function') {
+                    const initialized = initSupabase();
+                    if (initialized) {
+                        log('Supabase 초기화 성공', 'success');
+                    } else {
+                        log('Supabase 초기화 실패', 'error');
+                    }
+                } else {
+                    log('Supabase 초기화 함수를 찾을 수 없음', 'error');
+                }
+                
+                // 시스템 상태 체크
+                checkSystemStatus();
+            }, 500);
+            
+            // 시간 업데이트
+            updateTime();
+            setInterval(updateTime, 1000);
+        });
+
+        // ========== 전역 에러 처리 ==========
+        window.addEventListener('error', function(e) {
+            log(`전역 에러: ${e.message} (${e.filename}:${e.lineno})`, 'error');
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            log(`Promise 에러: ${e.reason}`, 'error');
+        });
+
+        // 테이블 관리 함수들 설정
+        function setupTableManagementFunctions() {
+            // 테이블 스키마 업데이트 함수 - 학습안내용 간소화
+            window.TableSchemaUpdate = async function(tableName, fields) {
+                try {
+                    console.log(`[Admin] 테이블 스키마 업데이트: ${tableName}`);
+                    
+                    // 학습안내 테이블이면 RESTful API로 테스트
+                    if (tableName === 'learning_guides') {
+                        const testResponse = await fetch(`tables/${tableName}?limit=1`);
+                        if (testResponse.ok) {
+                            console.log(`[Admin] 테이블 ${tableName} 접근 가능 - 스키마 OK`);
+                            return true;
+                        }
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error(`[Admin] 테이블 스키마 업데이트 오류 (${tableName}):`, error);
+                    return false;
+                }
+            };
+            
+            // 테이블 데이터 추가 함수
+            window.TableDataAdd = async function(tableName, rows) {
+                try {
+                    console.log(`[Admin] 테이블 데이터 추가: ${tableName}, ${rows.length}개 행`);
+                    
+                    const promises = rows.map(row => 
+                        fetch(`tables/${tableName}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(row)
+                        })
+                    );
+                    
+                    await Promise.all(promises);
+                    console.log(`[Admin] 테이블 데이터 추가 완료: ${tableName}`);
+                    
+                    return true;
+                } catch (error) {
+                    console.error(`[Admin] 테이블 데이터 추가 오류 (${tableName}):`, error);
+                    throw error;
+                }
+            };
+            
+            console.log('[Admin] 테이블 관리 함수들 설정 완료');
+        }
+    </script>
+
+    <!-- Supabase 초기화 -->
+    <script>
+        console.log('[Admin] Supabase 초기화 시작');
+        
+        let globalSupabaseClient = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Admin] DOM 로드 완료, Supabase 초기화 시작');
+            
+            function initializeSupabaseForAdmin() {
+                if (typeof window.supabase !== 'undefined' && typeof SUPABASE_URL !== 'undefined') {
+                    try {
+                        globalSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        console.log('[Admin] Supabase 초기화 성공');
+                        
+                        // 관리자 모듈에서 사용할 수 있도록 전역 이벤트 발송
+                        window.dispatchEvent(new CustomEvent('adminSupabaseReady', { 
+                            detail: { client: globalSupabaseClient } 
+                        }));
+                        
+                        // 테이블 관리 함수들 정의 (안전하게)
+                        if (typeof setupTableManagementFunctions === 'function') {
+                            setupTableManagementFunctions();
+                        } else {
+                            console.warn('[Admin] setupTableManagementFunctions 함수를 찾을 수 없음');
+                        }
+                        
+                        // 안전한 일괄삭제 버튼 이벤트 리스너 (이벤트 전파 방지)
+                        const safeDeleteBtn = document.getElementById('safeDeleteAllBtn');
+                        if (safeDeleteBtn) {
+                            safeDeleteBtn.addEventListener('click', function(event) {
+                                console.log('[SafeDelete] 안전한 버튼 클릭 감지');
+                                safeDeleteAllReplies(event);
+                            }, true); // capture 모드로 이벤트 우선 처리
+                        }
+                        
+                        // 전역 함수 등록은 초기화 완료 후 별도로 실행
+                        console.log('[Admin] Supabase 초기화만 완료, 전역 함수는 별도로 등록 예정');
+                        
+                        // 테이블 관리 함수들은 이미 위에서 설정됨 (중복 호출 방지)
+                        console.log('[Admin] 테이블 관리 함수는 이미 설정되었음');
+                        
+                        // 시스템 상태 즉시 체크
+                        console.log('[Admin] 시스템 상태 체크 실행');
+                        checkSystemStatus();
+                        
+                        return true;
+                    } catch (error) {
+                        console.error('[Admin] Supabase 초기화 오류:', error);
+                        return false;
+                    }
+                } else {
+                    console.log('[Admin] Supabase 또는 설정 아직 준비 안됨');
+                    return false;
+                }
+            }
+            
+            // 즉시 초기화 시도
+            if (!initializeSupabaseForAdmin()) {
+                // 1초 후 다시 시도
+                setTimeout(() => {
+                    if (!initializeSupabaseForAdmin()) {
+                        console.warn('[Admin] Supabase 초기화 2번 실패 - 로컬 모드로 진행');
+                    }
+                }, 1000);
+            }
+        });
+    </script>
+    
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-api.js"></script>
+    
+    <!-- 전역 함수 등록 (모든 함수 정의 완료 후) -->
+    <script>
+        // 모든 스크립트 로드 완료 후 전역 함수 등록
+        window.addEventListener('load', function() {
+            console.log('[Admin] 모든 스크립트 로드 완료 - 전역 함수 등록 시작');
+            
+            // 전역 함수 등록 (안전하게)
+            if (typeof loadMessagesModule === 'function') window.loadMessagesModule = loadMessagesModule;
+            if (typeof loadLuckyDrawModule === 'function') window.loadLuckyDrawModule = loadLuckyDrawModule;
+            if (typeof loadStudentsModule === 'function') window.loadStudentsModule = loadStudentsModule;  
+            if (typeof loadPointsModule === 'function') window.loadPointsModule = loadPointsModule;
+            if (typeof loadRolesModuleWrapper === 'function') window.loadRolesModuleWrapper = loadRolesModuleWrapper;
+            if (typeof loadStagesModule === 'function') window.loadStagesModule = loadStagesModule;
+            if (typeof loadGuidesModule === 'function') window.loadGuidesModule = loadGuidesModule;
+            if (typeof loadSpinnerModule === 'function') window.loadSpinnerModule = loadSpinnerModule;
+            if (typeof checkSystemStatus === 'function') window.checkSystemStatus = checkSystemStatus;
+            
+            console.log('[Admin] 전역 함수 등록 완료');
+            
+            // 시스템 상태 체크
+            if (typeof checkSystemStatus === 'function') {
+                checkSystemStatus();
+            }
+        });
+    </script>
+    
+    <!-- 관리자 모듈들 -->
+    <script src="js/api-wrapper.js"></script>
+    <script src="js/admin-students.js"></script>
+    <!-- <script src="js/admin-roles.js"></script> <!-- 구문 오류로 임시 비활성화 --> -->
+    <script src="js/admin-stage-config.js"></script>
+    <script src="js/admin-guides.js"></script>
+    <!-- <script src="test-admin-button.js"></script> -->
+
+</body>
+</html>

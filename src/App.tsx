@@ -201,10 +201,66 @@ function App() {
             onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#218838'}
             onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#28a745'}
           >
-            🚀 메인 페이지 실행
+            🚀 메인 페이지 (React)
           </button>
-          <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
-            📱 크롬북 13인치 최적화: 타이머 + 로그인 + 돌림판 3분할 레이아웃
+          <button
+            onClick={() => window.location.href = '?page=original'}
+            style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              marginRight: '10px'
+            }}
+            onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#c82333'}
+            onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#dc3545'}
+          >
+            🎯 메인 페이지 (원본)
+          </button>
+          <button
+            onClick={() => window.location.href = '?page=student'}
+            style={{
+              backgroundColor: '#6f42c1',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              marginRight: '10px'
+            }}
+            onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#5a32a3'}
+            onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#6f42c1'}
+          >
+            👤 학생 페이지 (원본)
+          </button>
+          <button
+            onClick={() => window.location.href = '?page=admin'}
+            style={{
+              backgroundColor: '#fd7e14',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+            onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#e8690b'}
+            onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#fd7e14'}
+          >
+            🔧 관리자 페이지 (원본)
+          </button>
+          <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
+            📱 <strong>크롬북 13인치 최적화</strong>: 모든 페이지가 원본 레이아웃을 100% 보존합니다<br/>
+            🎯 <strong>메인페이지</strong>: 타이머 + 로그인 + 돌림판 3분할 레이아웃<br/>
+            👤 <strong>학생페이지</strong>: 역할배정 + 포인트 + 쪽지함 6영역 그리드<br/>
+            🔧 <strong>관리자페이지</strong>: 포인트/학생/역할/메시지 관리 시스템
           </div>
         </div>
 
