@@ -40,35 +40,48 @@ async function loadStudentsList() {
         console.log('- supabaseAPI:', window.supabaseAPI);
         console.log('- supabase 전역객체:', window.supabase);
         
-        // 🔄 임시 복구: supabaseAPI 사용 가능할 때만 시도
-        if (typeof supabaseAPI !== 'undefined' && supabaseAPI && supabaseAPI.students) {
-            console.log('[Messages] Supabase API 호출: supabaseAPI.students.getAll()');
-            currentStudents = await supabaseAPI.students.getAll();
-            console.log(`[Messages] Supabase로 학생 목록 로드 완료: ${currentStudents.length}명`);
-        } else {
-            // 폴백: 기존 REST API 방식 사용
-            console.log('[Messages] supabaseAPI 없음, REST API 폴백 사용');
-            console.log('[Messages] 현재 URL:', window.location.href);
+        // 직접 Supabase 클라이언트 사용
+        if (typeof supabase !== 'undefined' && supabase) {
+            console.log('[Messages] 직접 Supabase 클라이언트 사용');
             
-            const response = await fetch('tables/students?limit=1000');
-            console.log(`[Messages] REST API 응답:`, response);
-            console.log(`[Messages] REST API 응답 상태: ${response.status}`);
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .order('grade', { ascending: true })
+                .order('class_num', { ascending: true })
+                .order('number', { ascending: true });
             
-            if (response.ok) {
-                const result = await response.json();
-                console.log(`[Messages] REST API 결과:`, result);
-                currentStudents = result.data || [];
-                console.log(`[Messages] REST API로 학생 목록 로드 완료: ${currentStudents.length}명`);
-                
-                // 첫 번째 학생 데이터 구조 확인
-                if (currentStudents.length > 0) {
-                    console.log('[Messages] 첫 번째 학생 데이터 구조:', currentStudents[0]);
-                }
-            } else {
-                const errorText = await response.text();
-                console.error(`[Messages] REST API 오류 상세:`, errorText);
-                throw new Error(`REST API 오류: ${response.status} - ${errorText}`);
+            if (error) {
+                console.error('[Messages] Supabase 직접 조회 오류:', error);
+                throw new Error(`Supabase 오류: ${error.message}`);
             }
+            
+            currentStudents = data || [];
+            console.log(`[Messages] Supabase 직접 조회 성공: ${currentStudents.length}명`);
+            
+            // 데이터 구조 확인
+            if (currentStudents.length > 0) {
+                console.log('[Messages] 첫 번째 학생 데이터:', currentStudents[0]);
+                console.log('[Messages] 사용 가능한 필드:', Object.keys(currentStudents[0]));
+            }
+            
+        } else if (typeof supabaseAPI !== 'undefined' && supabaseAPI && supabaseAPI.students) {
+            console.log('[Messages] Supabase API 래퍼 사용');
+            currentStudents = await supabaseAPI.students.getAll();
+            console.log(`[Messages] Supabase API로 학생 목록 로드 완료: ${currentStudents.length}명`);
+            
+        } else {
+            // 마지막 폴백: smartFetch 사용
+            console.log('[Messages] smartFetch 폴백 사용');
+            const response = await smartFetch('tables/students?limit=1000');
+            
+            if (!response.ok) {
+                throw new Error(`smartFetch 오류: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            currentStudents = result.data || [];
+            console.log(`[Messages] smartFetch로 학생 목록 로드 완료: ${currentStudents.length}명`);
         }
         
         console.log('[Messages] 첫 번째 학생 예시:', currentStudents[0]);
