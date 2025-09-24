@@ -3,6 +3,7 @@ import './App.css'
 import { testSupabaseConnection } from './lib/supabase'
 import { runStudentUtilsTests } from './utils/__tests__/studentUtils.test'
 import SupabaseTest from './components/SupabaseTest'
+import AssignmentTest from './components/AssignmentTest'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
@@ -112,6 +113,9 @@ function App() {
 
         {/* Step 2A.1 Test Component */}
         <SupabaseTest />
+
+        {/* Step 2A.2b Test Component */}
+        <AssignmentTest />
       </div>
     </>
   )
