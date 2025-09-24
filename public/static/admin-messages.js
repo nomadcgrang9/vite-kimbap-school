@@ -9,18 +9,24 @@ let replyHistory = []; // 답장 이력
 // ============ MODULE INITIALIZATION ============
 async function initializeMessagesModule() {
     console.log('[Messages] 모듈 초기화 시작');
+    console.log('[Messages] currentStudents 초기 상태:', currentStudents.length);
     
     try {
         // 학생 목록 로드
+        console.log('[Messages] 1단계: 학생 목록 로드 시작');
         await loadStudentsList();
+        console.log('[Messages] 1단계 완료: 학생 목록 로드 완료, 총', currentStudents.length, '명');
         
         // 메시지 이력 로드
+        console.log('[Messages] 2단계: 메시지 이력 로드 시작');
         await loadMessageHistory();
+        console.log('[Messages] 2단계 완료: 메시지 이력 로드 완료');
         
-        console.log('[Messages] 모듈 초기화 완료');
+        console.log('[Messages] 모듈 초기화 완료 - 최종 학생 수:', currentStudents.length);
         return true;
     } catch (error) {
         console.error('[Messages] 모듈 초기화 실패:', error);
+        console.error('[Messages] 오류 스택:', error.stack);
         return false;
     }
 }
@@ -29,23 +35,39 @@ async function initializeMessagesModule() {
 async function loadStudentsList() {
     console.log('[Messages] 학생 목록 로드 시작');
     try {
+        console.log('[Messages] 환경 확인:');
+        console.log('- typeof supabaseAPI:', typeof supabaseAPI);
+        console.log('- supabaseAPI:', window.supabaseAPI);
+        console.log('- supabase 전역객체:', window.supabase);
+        
         // 🔄 임시 복구: supabaseAPI 사용 가능할 때만 시도
-        if (typeof supabaseAPI !== 'undefined' && supabaseAPI.students) {
+        if (typeof supabaseAPI !== 'undefined' && supabaseAPI && supabaseAPI.students) {
             console.log('[Messages] Supabase API 호출: supabaseAPI.students.getAll()');
             currentStudents = await supabaseAPI.students.getAll();
             console.log(`[Messages] Supabase로 학생 목록 로드 완료: ${currentStudents.length}명`);
         } else {
             // 폴백: 기존 REST API 방식 사용
             console.log('[Messages] supabaseAPI 없음, REST API 폴백 사용');
+            console.log('[Messages] 현재 URL:', window.location.href);
+            
             const response = await fetch('tables/students?limit=1000');
+            console.log(`[Messages] REST API 응답:`, response);
             console.log(`[Messages] REST API 응답 상태: ${response.status}`);
             
             if (response.ok) {
                 const result = await response.json();
+                console.log(`[Messages] REST API 결과:`, result);
                 currentStudents = result.data || [];
                 console.log(`[Messages] REST API로 학생 목록 로드 완료: ${currentStudents.length}명`);
+                
+                // 첫 번째 학생 데이터 구조 확인
+                if (currentStudents.length > 0) {
+                    console.log('[Messages] 첫 번째 학생 데이터 구조:', currentStudents[0]);
+                }
             } else {
-                throw new Error(`REST API 오류: ${response.status}`);
+                const errorText = await response.text();
+                console.error(`[Messages] REST API 오류 상세:`, errorText);
+                throw new Error(`REST API 오류: ${response.status} - ${errorText}`);
             }
         }
         
@@ -416,3 +438,6 @@ window.messagesModule = {
 };
 
 console.log('[Messages] 모듈 로드 완료');
+console.log('[Messages] window.messagesModule 확인:', !!window.messagesModule);
+console.log('[Messages] initialize 함수 확인:', typeof window.messagesModule.initialize);
+console.log('[Messages] currentStudents getter 확인:', typeof window.messagesModule.currentStudents);
