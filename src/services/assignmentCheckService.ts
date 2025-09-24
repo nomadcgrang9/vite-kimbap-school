@@ -4,323 +4,261 @@
  */
 
 import { loadAssignments } from './assignmentService';
-import type { Assignment, AssignmentServiceResult } from './assignmentService';
+import type { Assignment } from './assignmentService';
 import type { StudentInfo } from './studentAuthService';
 
-// 확장된 Assignment 타입 (원본 데이터 필드 추가)
-interface ExtendedAssignment extends Omit<Assignment, 'role_type'> {
-  student_id?: string;
-  studentId?: string;
-  target_class?: string;
-  targetClass?: string;
-  status?: string;
-  role?: string;
-  role_content?: string;
-  role_type?: 'text' | 'image' | string;
-  sessionName?: string;
-  roleName?: string;
-  missions?: ClassMission[];
+// 미션 데이터 타입 정의
+export interface Mission {
+  name?: string;
+  content?: string;
+  description?: string;
 }
 
-// 과제 확인 결과 타입
+// 학생 배정 결과 타입
+export interface StudentAssignment extends Assignment {
+  studentId: string;
+  studentName: string;
+  roleName?: string;
+  roleContent?: string;
+  roleDescription?: string;
+  sessionName?: string;
+  roleType?: string;
+  missions?: Mission[];
+}
+
+// 배정 확인 결과 타입
 export interface AssignmentCheckResult {
   success: boolean;
   hasAssignment: boolean;
   assignment?: StudentAssignment;
-  assignmentType?: 'direct' | 'class-based' | 'none';
+  assignmentType?: 'direct' | 'class';
   error?: string;
-  debugInfo?: AssignmentDebugInfo;
-}
-
-// 학생 배정 정보 타입 (원본 구조 유지)
-export interface StudentAssignment {
-  id: string;
-  studentId: string;
-  studentName: string;
-  roleName: string;
-  roleContent: string;
-  roleDescription?: string;
-  roleType?: 'text' | 'image';
-  sessionName?: string;
-  class?: string;
-  created_at?: string;
-  status?: string;
-}
-
-// 반별 배정의 미션 타입
-export interface ClassMission {
-  name: string;
-  content: string;
-  description?: string;
-}
-
-// 디버그 정보 타입
-export interface AssignmentDebugInfo {
-  totalAssignments: number;
-  studentDirectAssignments: number;
-  classAssignments: number;
-  allStudentIds: string[];
-  currentStudentId: string;
-  matchingLogic: {
-    directMatches: Array<{
-      assignmentId: string;
-      studentIdFromDB: string;
-      isMatch: boolean;
-      isActive: boolean;
-    }>;
-    classMatches: Array<{
-      assignmentId: string;
-      targetClass: string;
-      isMatch: boolean;
-    }>;
+  debugInfo?: {
+    totalAssignments: number;
+    directMatches: number;
+    classMatches: number;
+    studentId: string;
+    fullClass: string;
   };
 }
 
 /**
  * 학생의 직접 배정 확인
- * 원본의 직접 배정 찾기 로직
+ * 관리자가 특정 학생에게 직접 배정한 과제 찾기
  */
-function findDirectAssignments(assignments: ExtendedAssignment[], student: StudentInfo): {
-  assignments: ExtendedAssignment[];
-  debugInfo: AssignmentDebugInfo['matchingLogic']['directMatches'];
-} {
-  const debugInfo: AssignmentDebugInfo['matchingLogic']['directMatches'] = [];
+function findDirectAssignments(assignments: Assignment[], studentId: string): Assignment[] {
+  console.log('[AssignmentCheck] 직접 배정 확인 시작:', studentId);
   
   const directAssignments = assignments.filter(assignment => {
-    // Supabase는 student_id, localStorage는 studentId
-    const studentIdFromDB = assignment.student_id || assignment.studentId || '';
-    const isForThisStudent = studentIdFromDB === student.studentId;
+    // Supabase에서는 student_id, localStorage에서는 studentId 필드 사용
+    const assignmentStudentId = assignment.student_id || assignment.studentId;
+    const isForThisStudent = assignmentStudentId === studentId;
     const isActive = !assignment.status || assignment.status === 'active';
-    const isMatch = isForThisStudent && isActive;
     
-    // 디버그 정보 수집
-    debugInfo.push({
-      assignmentId: assignment.id || 'unknown',
-      studentIdFromDB,
+    console.log('[DirectAssignment Filter]', {
+      assignmentId: assignment.id,
+      assignmentStudentId,
+      studentId,
       isMatch: isForThisStudent,
-      isActive
+      status: assignment.status,
+      isActive,
+      finalMatch: isForThisStudent && isActive
     });
     
-    return isMatch;
+    return isForThisStudent && isActive;
   });
   
-  return { assignments: directAssignments, debugInfo };
+  console.log('[AssignmentCheck] 직접 배정 결과:', directAssignments.length, '개');
+  return directAssignments;
 }
 
 /**
- * 반별 배정 확인
- * 원본의 반별 배정 찾기 로직
+ * 학생의 반별 배정 확인
+ * 특정 반에 배정된 과제에서 학생 번호에 따른 미션 할당
  */
-function findClassAssignments(assignments: ExtendedAssignment[], student: StudentInfo): {
-  assignments: ExtendedAssignment[];
-  debugInfo: AssignmentDebugInfo['matchingLogic']['classMatches'];
-} {
-  const debugInfo: AssignmentDebugInfo['matchingLogic']['classMatches'] = [];
+function findClassAssignments(assignments: Assignment[], student: StudentInfo): StudentAssignment[] {
+  console.log('[AssignmentCheck] 반별 배정 확인 시작:', student.fullClass);
   
   const classAssignments = assignments.filter(assignment => {
-    // Supabase는 target_class, localStorage는 targetClass
-    const targetClassFromDB = assignment.target_class || assignment.targetClass || '';
-    const classMatch = targetClassFromDB === student.fullClass;
-    const statusMatch = !assignment.status || assignment.status === 'active';
-    const isMatch = classMatch && statusMatch;
+    // Supabase에서는 target_class, localStorage에서는 targetClass 필드 사용
+    const targetClass = assignment.target_class || assignment.targetClass;
+    const isForThisClass = targetClass === student.fullClass;
+    const isActive = !assignment.status || assignment.status === 'active';
     
-    // 디버그 정보 수집
-    debugInfo.push({
-      assignmentId: assignment.id || 'unknown',
-      targetClass: targetClassFromDB,
-      isMatch
+    console.log('[ClassAssignment Filter]', {
+      assignmentId: assignment.id,
+      targetClass,
+      studentClass: student.fullClass,
+      isMatch: isForThisClass,
+      status: assignment.status,
+      isActive,
+      finalMatch: isForThisClass && isActive
     });
     
-    return isMatch;
+    return isForThisClass && isActive;
   });
   
-  return { assignments: classAssignments, debugInfo };
-}
-
-/**
- * 반별 배정을 개별 학생 배정으로 변환
- * 원본의 미션 할당 로직 (학생 번호 기반)
- */
-function convertClassToStudentAssignment(
-  classAssignment: ExtendedAssignment, 
-  student: StudentInfo
-): StudentAssignment | null {
-  try {
-    // missions 배열 확인
-    const missions: ClassMission[] = (classAssignment as any).missions || [];
-    
-    if (missions.length === 0) {
-      // 미션이 없으면 기본 배정 정보 사용
-      return {
-        id: classAssignment.id || '',
-        studentId: student.studentId,
-        studentName: student.name,
-        roleName: (classAssignment as any).sessionName || '기본 역할',
-        roleContent: classAssignment.role_content || classAssignment.role || '기본 내용',
-        roleDescription: classAssignment.role_content || '',
-        roleType: (classAssignment.role_type as 'text' | 'image') || 'text',
-        sessionName: (classAssignment as any).sessionName,
-        class: student.fullClass,
-        created_at: classAssignment.created_at,
-        status: 'active'
-      };
-    }
-    
-    // 학생 번호 기반으로 미션 할당 (원본 로직 유지)
-    const studentNumber = parseInt(student.number.toString()) || 1;
-    const missionIndex = (studentNumber - 1) % missions.length;
-    const selectedMission = missions[missionIndex];
-    
-    console.log(`[AssignmentCheck] 학생 ${student.number}번 → 미션 ${missionIndex}: ${selectedMission.name}`);
-    
-    return {
-      id: `${classAssignment.id}_${student.studentId}`,
+  console.log('[AssignmentCheck] 반별 배정 후보:', classAssignments.length, '개');
+  
+  if (classAssignments.length === 0) {
+    return [];
+  }
+  
+  // 가장 최근 반별 배정 선택
+  const selectedClassAssignment = classAssignments[classAssignments.length - 1];
+  console.log('[AssignmentCheck] 선택된 반별 배정:', selectedClassAssignment.id);
+  
+  // 미션 배열에서 학생 번호에 따른 미션 할당
+  const missions = selectedClassAssignment.missions || [];
+  console.log('[AssignmentCheck] 사용 가능한 미션:', missions.length, '개');
+  
+  if (missions.length === 0) {
+    // 미션이 없으면 기본 배정으로 반환
+    return [{
+      ...selectedClassAssignment,
       studentId: student.studentId,
       studentName: student.name,
-      roleName: selectedMission.name || (classAssignment as any).sessionName || '기본 역할',
-      roleContent: selectedMission.content || selectedMission.name || '',
-      roleDescription: selectedMission.description || selectedMission.content || '',
-      roleType: (classAssignment.role_type as 'text' | 'image') || 'text',
-      sessionName: (classAssignment as any).sessionName,
-      class: student.fullClass,
-      created_at: classAssignment.created_at,
-      status: 'active'
-    };
-    
-  } catch (error) {
-    console.error('[AssignmentCheck] 반별 배정 변환 오류:', error);
-    return null;
+      roleName: selectedClassAssignment.sessionName || '기본 역할',
+      roleContent: selectedClassAssignment.role_content || selectedClassAssignment.roleContent || '',
+      roleDescription: '반별 기본 배정'
+    } as StudentAssignment];
   }
+  
+  // 학생 번호 기반 미션 할당 (일관된 배정)
+  const studentNumber = parseInt(student.number.toString()) || 1;
+  const missionIndex = (studentNumber - 1) % missions.length;
+  const selectedMission = missions[missionIndex];
+  
+  console.log('[AssignmentCheck] 미션 할당:', {
+    studentNumber,
+    missionIndex,
+    selectedMission: selectedMission?.name || 'unnamed'
+  });
+  
+  // 학생용 배정 생성
+  const studentAssignment: StudentAssignment = {
+    ...selectedClassAssignment,
+    studentId: student.studentId,
+    studentName: student.name,
+    roleName: selectedMission.name || selectedClassAssignment.sessionName || '할당된 역할',
+    roleContent: selectedMission.content || selectedMission.name || '',
+    roleDescription: selectedMission.description || selectedMission.content || '반별 미션 배정'
+  };
+  
+  return [studentAssignment];
 }
 
 /**
- * 학생의 과제 배정 확인
+ * 학생 배정 확인 메인 함수
  * 원본 checkStudentAssignment 함수의 TypeScript 버전
  */
 export async function checkStudentAssignment(student: StudentInfo): Promise<AssignmentCheckResult> {
-  console.log('[AssignmentCheck] 과제 확인 시작:', student.studentId, student.name);
+  console.log('[AssignmentCheck] 학생 배정 확인 시작:', student.studentId);
   
   try {
     // 1. 최신 배정 데이터 로드
-    const assignmentResult: AssignmentServiceResult = await loadAssignments();
-    
+    const assignmentResult = await loadAssignments();
     if (!assignmentResult.success) {
       return {
         success: false,
         hasAssignment: false,
-        error: `배정 데이터 로드 실패: ${assignmentResult.error}`,
-        debugInfo: {
-          totalAssignments: 0,
-          studentDirectAssignments: 0,
-          classAssignments: 0,
-          allStudentIds: [],
-          currentStudentId: student.studentId,
-          matchingLogic: { directMatches: [], classMatches: [] }
-        }
+        error: `배정 데이터 로드 실패: ${assignmentResult.error}`
       };
     }
     
-    const assignments = assignmentResult.data as ExtendedAssignment[];
+    const assignments = assignmentResult.data;
     console.log('[AssignmentCheck] 로드된 배정 수:', assignments.length);
     
     // 디버그 정보 수집
-    const allStudentIds = assignments
-      .map(a => a.student_id || a.studentId)
-      .filter(Boolean)
-      .filter((id, index, arr) => arr.indexOf(id) === index) as string[]; // 중복 제거
+    const debugInfo = {
+      totalAssignments: assignments.length,
+      directMatches: 0,
+      classMatches: 0,
+      studentId: student.studentId,
+      fullClass: student.fullClass
+    };
     
-    // 2. 직접 배정 확인
-    const { assignments: directAssignments, debugInfo: directDebugInfo } = findDirectAssignments(assignments, student);
+    // 2. 직접 배정 확인 (우선순위 1)
+    const directAssignments = findDirectAssignments(assignments, student.studentId);
+    debugInfo.directMatches = directAssignments.length;
     
     if (directAssignments.length > 0) {
-      console.log('[AssignmentCheck] 직접 배정 발견:', directAssignments.length, '개');
-      
-      // 가장 최신 배정 선택
-      const latestAssignment = directAssignments[directAssignments.length - 1];
-      const studentAssignment: StudentAssignment = {
-        id: latestAssignment.id || '',
-        studentId: student.studentId,
-        studentName: student.name,
-        roleName: (latestAssignment as any).roleName || latestAssignment.role || '직접 배정 역할',
-        roleContent: latestAssignment.role_content || latestAssignment.role || '',
-        roleDescription: (latestAssignment as any).roleDescription || '',
-        roleType: (latestAssignment.role_type as 'text' | 'image') || 'text',
-        sessionName: (latestAssignment as any).sessionName || '',
-        class: student.fullClass,
-        created_at: latestAssignment.created_at,
-        status: latestAssignment.status || 'active'
-      };
+      const selectedAssignment = directAssignments[directAssignments.length - 1]; // 최신 배정 선택
+      console.log('[AssignmentCheck] 직접 배정 발견:', selectedAssignment.id);
       
       return {
         success: true,
         hasAssignment: true,
-        assignment: studentAssignment,
+        assignment: {
+          ...selectedAssignment,
+          studentId: student.studentId,
+          studentName: student.name
+        } as StudentAssignment,
         assignmentType: 'direct',
-        debugInfo: {
-          totalAssignments: assignments.length,
-          studentDirectAssignments: directAssignments.length,
-          classAssignments: 0,
-          allStudentIds: allStudentIds,
-          currentStudentId: student.studentId,
-          matchingLogic: { directMatches: directDebugInfo, classMatches: [] }
-        }
+        debugInfo
       };
     }
     
-    // 3. 반별 배정 확인
-    console.log('[AssignmentCheck] 직접 배정 없음, 반별 배정 확인:', student.fullClass);
-    
-    const { assignments: classAssignments, debugInfo: classDebugInfo } = findClassAssignments(assignments, student);
+    // 3. 반별 배정 확인 (우선순위 2)
+    const classAssignments = findClassAssignments(assignments, student);
+    debugInfo.classMatches = classAssignments.length;
     
     if (classAssignments.length > 0) {
-      console.log('[AssignmentCheck] 반별 배정 발견:', classAssignments.length, '개');
+      console.log('[AssignmentCheck] 반별 배정 발견');
       
-      // 가장 최신 반별 배정 선택
-      const latestClassAssignment = classAssignments[classAssignments.length - 1];
-      const studentAssignment = convertClassToStudentAssignment(latestClassAssignment, student);
-      
-      if (studentAssignment) {
-        return {
-          success: true,
-          hasAssignment: true,
-          assignment: studentAssignment,
-          assignmentType: 'class-based',
-          debugInfo: {
-            totalAssignments: assignments.length,
-            studentDirectAssignments: 0,
-            classAssignments: classAssignments.length,
-            allStudentIds: allStudentIds,
-            currentStudentId: student.studentId,
-            matchingLogic: { directMatches: directDebugInfo, classMatches: classDebugInfo }
-          }
-        };
-      }
+      return {
+        success: true,
+        hasAssignment: true,
+        assignment: classAssignments[0],
+        assignmentType: 'class',
+        debugInfo
+      };
     }
     
     // 4. 배정 없음
-    console.log('[AssignmentCheck] 배정 없음');
+    console.log('[AssignmentCheck] 학생에게 배정된 과제 없음');
     return {
       success: true,
       hasAssignment: false,
-      assignmentType: 'none',
-      debugInfo: {
-        totalAssignments: assignments.length,
-        studentDirectAssignments: 0,
-        classAssignments: classAssignments.length,
-        allStudentIds,
-        currentStudentId: student.studentId,
-        matchingLogic: { directMatches: directDebugInfo, classMatches: classDebugInfo }
-      }
+      debugInfo
     };
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
-    console.error('[AssignmentCheck] 과제 확인 오류:', errorMessage);
+    console.error('[AssignmentCheck] 배정 확인 오류:', errorMessage);
     
     return {
       success: false,
       hasAssignment: false,
-      error: errorMessage
+      error: `배정 확인 실패: ${errorMessage}`
     };
+  }
+}
+
+/**
+ * 배정 상태를 확인됨으로 표시
+ * 원본의 markAssignmentAsChecked 로직
+ */
+export async function markAssignmentAsChecked(assignmentId: string): Promise<boolean> {
+  console.log('[AssignmentCheck] 배정 확인 표시:', assignmentId);
+  
+  try {
+    // 현재는 로컬에서만 처리, 추후 Supabase 연동 시 확장 가능
+    const timestamp = new Date().toISOString();
+    console.log('[AssignmentCheck] 배정 확인 시간:', timestamp);
+    
+    // localStorage에 확인 상태 저장 (임시)
+    const checkedAssignments = JSON.parse(localStorage.getItem('checkedAssignments') || '{}');
+    checkedAssignments[assignmentId] = {
+      checked: true,
+      checkedAt: timestamp
+    };
+    localStorage.setItem('checkedAssignments', JSON.stringify(checkedAssignments));
+    
+    return true;
+    
+  } catch (error) {
+    console.error('[AssignmentCheck] 배정 확인 표시 오류:', error);
+    return false;
   }
 }

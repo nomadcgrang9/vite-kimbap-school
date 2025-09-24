@@ -10,10 +10,21 @@ import { safeSupabaseCall } from './supabaseService';
 export interface Assignment {
   id: string;
   student_id?: string;
+  studentId?: string;  // localStorage 호환성
   class?: string;
   role?: string;
   role_type?: 'text' | 'image';
   role_content?: string;
+  roleContent?: string;  // localStorage 호환성
+  target_class?: string;  // 반별 배정용
+  targetClass?: string;   // localStorage 호환성
+  status?: string;        // 배정 상태
+  sessionName?: string;   // 세션명
+  missions?: Array<{      // 반별 미션 배열
+    name?: string;
+    content?: string;
+    description?: string;
+  }>;
   created_at?: string;
   updated_at?: string;
   checked?: boolean;

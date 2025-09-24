@@ -332,30 +332,6 @@ export default function StudentAuthTest() {
           <div style={{ fontSize: '13px' }}>
             <div><strong>확인 성공:</strong> {assignmentResult.success ? '✅' : '❌'}</div>
             <div><strong>과제 존재:</strong> {assignmentResult.hasAssignment ? '✅ 있음' : '❌ 없음'}</div>
-            {assignmentResult.assignmentType && (
-              <div><strong>배정 유형:</strong> {
-                assignmentResult.assignmentType === 'direct' ? '직접 배정' :
-                assignmentResult.assignmentType === 'class-based' ? '반별 배정' : '배정 없음'
-              }</div>
-            )}
-            
-            {assignmentResult.error && (
-              <div style={{ color: 'red', marginTop: '5px' }}>
-                <strong>오류:</strong> {assignmentResult.error}
-              </div>
-            )}
-            
-            {assignmentResult.assignment && (
-              <div style={{ marginTop: '8px' }}>
-                <div><strong>배정된 역할:</strong></div>
-                <div style={{ marginLeft: '15px', fontSize: '12px' }}>
-                  <div>• 역할명: {assignmentResult.assignment.roleName}</div>
-                  <div>• 내용: {assignmentResult.assignment.roleContent.substring(0, 50)}...</div>
-                  <div>• 타입: {assignmentResult.assignment.roleType || 'text'}</div>
-                </div>
-              </div>
-            )}
-            
             {assignmentResult.debugInfo && (
               <details style={{ marginTop: '8px' }}>
                 <summary style={{ cursor: 'pointer', fontSize: '12px', color: '#666' }}>

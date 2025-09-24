@@ -6,6 +6,7 @@ import SupabaseTest from './components/SupabaseTest'
 import AssignmentTest from './components/AssignmentTest'
 import StudentInitializationTest from './components/StudentInitializationTest'
 import StudentAuthTest from './components/StudentAuthTest'
+import AssignmentCheckTest from './components/AssignmentCheckTest'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
@@ -124,6 +125,9 @@ function App() {
 
         {/* Step 2B.2 Test Component */}
         <StudentAuthTest />
+
+        {/* Step 2B.4 Test Component */}
+        <AssignmentCheckTest />
       </div>
     </>
   )
