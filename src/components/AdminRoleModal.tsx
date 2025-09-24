@@ -146,13 +146,20 @@ export default function AdminRoleModal({ isOpen, onClose }: AdminRoleModalProps)
   
   const handleEditSession = (sessionId: string) => {
     console.log('✏️ [AdminRoleModal] 세션 편집 시작:', sessionId);
+    console.log('🔍 [AdminRoleModal] 전체 sessions 배열:', sessions);
+    console.log('🔍 [AdminRoleModal] sessions 배열 길이:', sessions.length);
     
     const session = sessions.find(s => s.id === sessionId);
     if (!session) {
       console.error('❌ [AdminRoleModal] 세션을 찾을 수 없습니다:', sessionId);
+      console.error('🔍 [AdminRoleModal] 찾으려는 ID:', sessionId);
+      console.error('🔍 [AdminRoleModal] 사용 가능한 세션 ID들:', sessions.map(s => s.id));
       alert('세션을 찾을 수 없습니다.');
       return;
     }
+    
+    console.log('🔍 [AdminRoleModal] 찾은 세션 객체:', session);
+    console.log('🔍 [AdminRoleModal] 세션 객체 키들:', Object.keys(session));
     
     setEditingSession(session);
     setIsEditModalOpen(true);

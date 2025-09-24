@@ -88,11 +88,23 @@ export async function loadAdminSessions(): Promise<AdminSessionLoadResult> {
     
     const sessions = data || [];
     
+    // 🔍 데이터베이스에서 가져온 원본 데이터 구조 확인
+    console.log('🔍 [AdminSessionService] 원본 sessions 데이터:', sessions);
+    if (sessions.length > 0) {
+      console.log('🔍 [AdminSessionService] 첫 번째 세션 객체:', sessions[0]);
+      console.log('🔍 [AdminSessionService] 첫 번째 세션 키들:', Object.keys(sessions[0]));
+    }
+    
     // missions 데이터 파싱
     const processedSessions: AdminSession[] = sessions.map(session => ({
       ...session,
       parsedMissions: safeParseMissions(session.missions)
     }));
+    
+    console.log('🔍 [AdminSessionService] 처리된 sessions 데이터:', processedSessions);
+    if (processedSessions.length > 0) {
+      console.log('🔍 [AdminSessionService] 처리된 첫 번째 세션:', processedSessions[0]);
+    }
     
     console.log(`✅ [AdminSessionService] 세션 데이터 로드 완료: ${processedSessions.length}개`);
     
