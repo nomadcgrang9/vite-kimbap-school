@@ -11,7 +11,9 @@ import {
   loadStudentSession,
   logoutStudent
 } from '../services/studentAuthService';
+import { checkStudentAssignment } from '../services/assignmentCheckService';
 import type { LoginCredentials, LoginResult, StudentInfo } from '../services/studentAuthService';
+import type { AssignmentCheckResult } from '../services/assignmentCheckService';
 
 export default function StudentAuthTest() {
   const [credentials, setCredentials] = useState<LoginCredentials>({
@@ -19,7 +21,9 @@ export default function StudentAuthTest() {
     studentName: ''
   });
   const [loginResult, setLoginResult] = useState<LoginResult | null>(null);
+  const [assignmentResult, setAssignmentResult] = useState<AssignmentCheckResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAssignment, setIsCheckingAssignment] = useState(false);
   const [savedStudent, setSavedStudent] = useState<StudentInfo | null>(null);
 
   // 로그인 테스트 실행
@@ -76,11 +80,41 @@ export default function StudentAuthTest() {
     console.log('📖 Current Session:', session);
   };
 
+  // 과제 확인 테스트 (Step 2B.4)
+  const testAssignmentCheck = async () => {
+    if (!savedStudent) {
+      alert('먼저 로그인해주세요!');
+      return;
+    }
+
+    setIsCheckingAssignment(true);
+    console.log('🔍 [Step 2B.4] Assignment Check 테스트 시작...');
+
+    try {
+      const result = await checkStudentAssignment(savedStudent);
+      
+      console.log('📋 Assignment Check Result:', result);
+      setAssignmentResult(result);
+      
+    } catch (error) {
+      console.error('❌ [Step 2B.4] 과제 확인 테스트 오류:', error);
+      setAssignmentResult({
+        success: false,
+        hasAssignment: false,
+        error: error instanceof Error ? error.message : '과제 확인 테스트 오류'
+      });
+      
+    } finally {
+      setIsCheckingAssignment(false);
+    }
+  };
+
   // 로그아웃 테스트
   const testLogout = () => {
     logoutStudent();
     setSavedStudent(null);
     setLoginResult(null);
+    setAssignmentResult(null);
     console.log('👋 Logout completed');
   };
 
@@ -204,6 +238,22 @@ export default function StudentAuthTest() {
         </button>
         
         <button 
+          onClick={testAssignmentCheck}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#17a2b8',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginRight: '8px'
+          }}
+          disabled={!savedStudent || isCheckingAssignment}
+        >
+          {isCheckingAssignment ? '과제 확인 중...' : '과제 확인 테스트'}
+        </button>
+        
+        <button 
           onClick={testLogout}
           style={{
             padding: '6px 12px',
@@ -264,8 +314,72 @@ export default function StudentAuthTest() {
         </div>
       )}
       
+      {/* 과제 확인 결과 표시 (Step 2B.4) */}
+      {assignmentResult && (
+        <div style={{ 
+          marginTop: '15px', 
+          padding: '12px', 
+          backgroundColor: assignmentResult.success ? 
+            (assignmentResult.hasAssignment ? '#e7f3ff' : '#fff3cd') : '#f8d7da',
+          borderRadius: '4px',
+          border: `1px solid ${assignmentResult.success ? 
+            (assignmentResult.hasAssignment ? '#007bff' : '#ffc107') : '#dc3545'}`
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>
+            🔍 과제 확인 결과 (Step 2B.4):
+          </div>
+          
+          <div style={{ fontSize: '13px' }}>
+            <div><strong>확인 성공:</strong> {assignmentResult.success ? '✅' : '❌'}</div>
+            <div><strong>과제 존재:</strong> {assignmentResult.hasAssignment ? '✅ 있음' : '❌ 없음'}</div>
+            {assignmentResult.assignmentType && (
+              <div><strong>배정 유형:</strong> {
+                assignmentResult.assignmentType === 'direct' ? '직접 배정' :
+                assignmentResult.assignmentType === 'class-based' ? '반별 배정' : '배정 없음'
+              }</div>
+            )}
+            
+            {assignmentResult.error && (
+              <div style={{ color: 'red', marginTop: '5px' }}>
+                <strong>오류:</strong> {assignmentResult.error}
+              </div>
+            )}
+            
+            {assignmentResult.assignment && (
+              <div style={{ marginTop: '8px' }}>
+                <div><strong>배정된 역할:</strong></div>
+                <div style={{ marginLeft: '15px', fontSize: '12px' }}>
+                  <div>• 역할명: {assignmentResult.assignment.roleName}</div>
+                  <div>• 내용: {assignmentResult.assignment.roleContent.substring(0, 50)}...</div>
+                  <div>• 타입: {assignmentResult.assignment.roleType || 'text'}</div>
+                </div>
+              </div>
+            )}
+            
+            {assignmentResult.debugInfo && (
+              <details style={{ marginTop: '8px' }}>
+                <summary style={{ cursor: 'pointer', fontSize: '12px', color: '#666' }}>
+                  디버그 정보 보기
+                </summary>
+                <pre style={{ 
+                  fontSize: '10px', 
+                  backgroundColor: '#f8f9fa', 
+                  padding: '8px',
+                  borderRadius: '4px',
+                  marginTop: '5px',
+                  overflow: 'auto',
+                  maxHeight: '150px'
+                }}>
+                  {JSON.stringify(assignmentResult.debugInfo, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        </div>
+      )}
+
       <div style={{ marginTop: '15px', fontSize: '12px', color: '#666' }}>
-        원본 studentLogin() 함수 → TypeScript StudentAuthService 마이그레이션 검증
+        원본 studentLogin() + checkStudentAssignment() 함수 → TypeScript Services 마이그레이션 검증
       </div>
     </div>
   );
