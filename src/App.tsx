@@ -8,6 +8,8 @@ import StudentInitializationTest from './components/StudentInitializationTest'
 import StudentAuthTest from './components/StudentAuthTest'
 import AssignmentCheckTest from './components/AssignmentCheckTest'
 import RoleDisplayTest from './components/RoleDisplayTest'
+import IntegratedRoleTest from './components/IntegratedRoleTest'
+import AutoIntegrationTest from './components/AutoIntegrationTest'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
@@ -110,7 +112,7 @@ function App() {
             <li>✅ Phase 1.2: Git Initialization & First Utility Migration (COMPLETED)</li>
             <li>✅ Phase 2A: Core Function Migration (student.js → modules)</li>
             <li>✅ Phase 2B: Student Login System Migration</li>
-            <li>🔄 Phase 3A: Role Display System Migration</li>
+            <li>✅ Phase 3A: Role Display System Migration (COMPLETED)</li>
             <li>⏳ Phase 4: UI Component Migration</li>
           </ul>
         </div>
@@ -132,6 +134,12 @@ function App() {
 
         {/* Step 3A.2 Test Component */}
         <RoleDisplayTest />
+
+        {/* Step 3A.3 Integration Test Component */}
+        <IntegratedRoleTest />
+
+        {/* Step 3A.3 Auto Integration Test */}
+        <AutoIntegrationTest />
       </div>
     </>
   )
