@@ -17,12 +17,22 @@ import DirectAdminStudentTest from './components/DirectAdminStudentTest'
 import DirectAdminAssignmentTest from './components/DirectAdminAssignmentTest'
 import AdminRoleModal from './components/AdminRoleModal'
 import MainPage from './pages/MainPage'
+import StudentPageDemo from './pages/StudentPageDemo'
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'failed'>('testing')
   const [utilsTestResults, setUtilsTestResults] = useState<any>(null)
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false)
   const [showMainPage, setShowMainPage] = useState(false)
+
+
+  // URL 파라미터 체크
+  const urlParams = new URLSearchParams(window.location.search)
+  const pageParam = urlParams.get('page')
+  
+  // 디버깅용 로그
+  console.log('Current URL:', window.location.href)
+  console.log('Page param:', pageParam)
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -40,6 +50,12 @@ function App() {
   // MainPage 모드일 때는 테스트 컴포넌트들 대신 메인 페이지 표시
   if (showMainPage) {
     return <MainPage />
+  }
+
+  // StudentPage 모드일 때 학생 페이지 표시
+  if (pageParam === 'student-react') {
+    console.log('Loading StudentPageDemo...')
+    return <StudentPageDemo />
   }
 
   return (
@@ -202,6 +218,24 @@ function App() {
             onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#28a745'}
           >
             🚀 메인 페이지 (React)
+          </button>
+          <button
+            onClick={() => window.location.href = '?page=student-react'}
+            style={{
+              backgroundColor: '#6f42c1',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              marginRight: '10px'
+            }}
+            onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#5a32a3'}
+            onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#6f42c1'}
+          >
+            🆕 학생 페이지 (React)
           </button>
           <button
             onClick={() => window.location.href = '?page=original'}

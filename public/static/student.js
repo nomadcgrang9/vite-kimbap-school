@@ -3213,11 +3213,16 @@ function stopBoardAutoUpdate() {
 
 // Load board content from database
 async function loadBoardContent() {
+    // 학습안내 앞면 내용 로드 (독립적으로 처리)
     try {
-        // 학습안내 앞면 내용 로드
         await loadLearningGuideFrontContent();
-        
-        // 실시간 칠판 내용 로드 (기존 로직 유지)
+    } catch (error) {
+        console.error('학습안내 앞면 내용 로드 실패:', error);
+        // 앞면 로드 실패해도 실시간 칠판은 계속 진행
+    }
+    
+    // 실시간 칠판 내용 로드 (독립적으로 처리)
+    try {
         const response = await fetch('tables/board_content');
         if (response.ok) {
             const data = await response.json();
@@ -3240,22 +3245,20 @@ async function loadBoardContent() {
             }
         }
     } catch (error) {
-        console.log('Failed to load board content, using fallback');
+        console.error('실시간 칠판 내용 로드 실패:', error);
         
-        // Fallback to localStorage
+        // 실시간 칠판만 fallback 처리 (앞면은 건드리지 않음)
         const localBoardData = JSON.parse(localStorage.getItem('boardContent') || '{}');
-        
-        const fixedNoticeElement = document.getElementById('fixedNoticeBoard');
-        if (fixedNoticeElement) {
-            fixedNoticeElement.textContent = localBoardData.fixed_notice || '공지사항이 없습니다.';
-        }
         
         const liveBoardElement = document.getElementById('liveBoardContent');
         if (liveBoardElement) {
-            liveBoardElement.textContent = localBoardData.live_board || '칠판이 비어있습니다.';
+            liveBoardElement.textContent = localBoardData.live_board || '선생님 말씀이 없습니다.';
         }
     }
 }
+
+// 앞면 내용 캐시 변수
+let lastFrontContentHash = null;
 
 // 학습안내 앞면 내용 로드 함수
 async function loadLearningGuideFrontContent() {
@@ -3273,8 +3276,7 @@ async function loadLearningGuideFrontContent() {
         const result = await response.json();
         
         if (!result.data || result.data.length === 0) {
-            // 데이터가 없으면 기본 메시지 표시
-            fixedNoticeElement.innerHTML = `
+            const defaultContent = `
                 <div class="text-center text-gray-500 py-4">
                     <i class="fas fa-book-open text-3xl mb-2 text-blue-400"></i>
                     <p style="font-size: 0.8rem;">클릭하여 자료링크 확인</p>
@@ -3283,15 +3285,26 @@ async function loadLearningGuideFrontContent() {
                     </div>
                 </div>
             `;
+            
+            // 내용이 변경된 경우만 업데이트
+            const currentHash = 'default_empty';
+            if (lastFrontContentHash !== currentHash) {
+                fixedNoticeElement.innerHTML = defaultContent;
+                lastFrontContentHash = currentHash;
+                console.log('앞면 내용 업데이트: 기본 메시지');
+            }
             return;
         }
         
         const learningGuides = result.data[0];
         const frontContent = learningGuides.front_content;
+        const updatedAt = learningGuides.updated_at;
+        
+        // 내용 해시 생성 (내용 변경 감지용)
+        const contentHash = `${frontContent || ''}_${updatedAt || ''}`;
         
         if (!frontContent || frontContent.trim() === '' || frontContent === '아직 학습안내가 없습니다.') {
-            // 앞면 내용이 없거나 기본값이면 기본 UI 표시
-            fixedNoticeElement.innerHTML = `
+            const defaultContent = `
                 <div class="text-center text-gray-500 py-4">
                     <i class="fas fa-book-open text-3xl mb-2 text-blue-400"></i>
                     <p style="font-size: 0.8rem;">클릭하여 자료링크 확인</p>
@@ -3300,17 +3313,28 @@ async function loadLearningGuideFrontContent() {
                     </div>
                 </div>
             `;
+            
+            // 내용이 변경된 경우만 업데이트
+            if (lastFrontContentHash !== contentHash) {
+                fixedNoticeElement.innerHTML = defaultContent;
+                lastFrontContentHash = contentHash;
+                console.log('앞면 내용 업데이트: 기본 UI');
+            }
         } else {
-            // 앞면 내용이 있으면 표시 (스마트 링크 변환 적용)
-            const processedContent = processSmartLinks(frontContent);
-            fixedNoticeElement.innerHTML = `
-                <div class="notice-card">
-                    <div class="notice-content text-sm text-gray-700">${processedContent}</div>
-                    <div class="notice-date text-xs text-gray-500 mt-2">
-                        ${learningGuides.updated_at ? new Date(learningGuides.updated_at).toLocaleDateString('ko-KR') : ''}
+            // 내용이 변경된 경우만 업데이트
+            if (lastFrontContentHash !== contentHash) {
+                const processedContent = processSmartLinks(frontContent);
+                fixedNoticeElement.innerHTML = `
+                    <div class="notice-card">
+                        <div class="notice-content text-sm text-gray-700">${processedContent}</div>
+                        <div class="notice-date text-xs text-gray-500 mt-2">
+                            ${updatedAt ? new Date(updatedAt).toLocaleDateString('ko-KR') : ''}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+                lastFrontContentHash = contentHash;
+                console.log('앞면 내용 업데이트:', frontContent.substring(0, 50) + '...');
+            }
         }
         
     } catch (error) {
