@@ -290,135 +290,220 @@ function validateLoadedData() {
 }
 
 // ============ UI 생성 함수들 ============
-function createRoleModal() {
-    console.log('🎨 역할 관리 모달 생성 중...');
+function createRoleInterface() {
+    console.log('🎨 역할 관리 인터페이스 생성 중...');
     
-    // 기존 모달이 있으면 제거
-    const existingModal = document.getElementById('roleModal');
-    if (existingModal) {
-        existingModal.remove();
+    // 기존 컨테이너 찾기 또는 생성
+    let container = document.getElementById('moduleContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'moduleContainer';
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        container.style.zIndex = '9999';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.padding = '20px';
+        container.style.overflowY = 'auto';
+        document.body.appendChild(container);
     }
     
-    const modalHTML = `
-        <div id="roleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl h-5/6 flex flex-col">
-                <!-- 모달 헤더 -->
-                <div class="flex items-center justify-between p-6 border-b">
-                    <h2 class="text-2xl font-bold text-gray-800">
-                        <i class="fas fa-tasks text-purple-500 mr-3"></i>
-                        역할 배정 관리 v2.0
-                    </h2>
-                    <button onclick="closeRoleModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <!-- 탭 네비게이션 -->
-                <div class="flex border-b bg-gray-50">
-                    <button id="sessionsTab" onclick="switchRoleTab('sessions')" 
-                            class="flex-1 px-6 py-4 text-center font-medium transition-colors">
-                        <i class="fas fa-cogs mr-2"></i>
-                        세션 관리
-                    </button>
-                    <button id="assignmentTab" onclick="switchRoleTab('assignment')" 
-                            class="flex-1 px-6 py-4 text-center font-medium transition-colors">
-                        <i class="fas fa-user-tag mr-2"></i>
-                        배정 관리  
-                    </button>
-                    <button id="statusTab" onclick="switchRoleTab('status')" 
-                            class="flex-1 px-6 py-4 text-center font-medium transition-colors">
-                        <i class="fas fa-chart-bar mr-2"></i>
-                        배정 현황
-                    </button>
-                </div>
-                
-                <!-- 탭 콘텐츠 영역 -->
-                <div class="flex-1 overflow-hidden">
-                    <!-- 세션 관리 탭 -->
-                    <div id="sessionsContent" class="h-full overflow-y-auto p-6">
-                        <div class="mb-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-semibold text-gray-700">세션 관리</h3>
-                                <button onclick="createNewSession()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+    const interfaceHTML = `
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-7xl max-h-full flex flex-col">
+            <!-- 헤더 -->
+            <div class="flex items-center justify-between p-6 border-b bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-t-lg">
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-tasks mr-3"></i>
+                    역할 배정 관리 v2.0
+                </h2>
+                <button onclick="closeRoleInterface()" class="text-white hover:text-gray-200 text-2xl transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- 탭 네비게이션 -->
+            <div class="flex border-b bg-gray-50">
+                <button id="sessionsTab" onclick="switchRoleTab('sessions')" 
+                        class="flex-1 px-6 py-4 text-center font-medium transition-colors">
+                    <i class="fas fa-cogs mr-2"></i>
+                    세션 관리
+                </button>
+                <button id="assignmentTab" onclick="switchRoleTab('assignment')" 
+                        class="flex-1 px-6 py-4 text-center font-medium transition-colors">
+                    <i class="fas fa-user-tag mr-2"></i>
+                    배정 관리  
+                </button>
+                <button id="statusTab" onclick="switchRoleTab('status')" 
+                        class="flex-1 px-6 py-4 text-center font-medium transition-colors">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    배정 현황
+                </button>
+            </div>
+            
+            <!-- 탭 콘텐츠 영역 -->
+            <div class="flex-1 overflow-hidden min-h-[600px]">
+                <!-- 세션 관리 탭 -->
+                <div id="sessionsContent" class="h-full overflow-y-auto p-6">
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold text-gray-700">세션 관리</h3>
+                            <div class="text-right">
+                                <div id="newSessionForm" class="hidden mb-4 p-4 border rounded-lg bg-gray-50">
+                                    <h4 class="font-semibold mb-3">새 세션 만들기</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <input type="text" id="newSessionName" placeholder="세션 이름" 
+                                               class="px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-purple-500">
+                                        <textarea id="newSessionMissions" placeholder="미션 목록 (JSON 형식)" 
+                                                  rows="3" class="px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-purple-500"></textarea>
+                                    </div>
+                                    <div class="flex gap-2 mt-3">
+                                        <button onclick="saveNewSession()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                            <i class="fas fa-save mr-2"></i>저장
+                                        </button>
+                                        <button onclick="cancelNewSession()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                                            <i class="fas fa-times mr-2"></i>취소
+                                        </button>
+                                    </div>
+                                </div>
+                                <button id="createNewSessionBtn" onclick="showNewSessionForm()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
                                     <i class="fas fa-plus mr-2"></i>새 세션 만들기
                                 </button>
                             </div>
-                            <div id="sessionsList" class="space-y-4">
-                                <!-- 세션 목록이 여기에 표시됩니다 -->
-                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- 배정 관리 탭 -->
-                    <div id="assignmentContent" class="h-full overflow-y-auto p-6 hidden">
-                        <div class="mb-6">
-                            <h3 class="text-xl font-semibold text-gray-700 mb-4">배정 관리</h3>
-                            <div id="assignmentManagement">
-                                <p class="text-gray-500 text-center py-8">세션을 선택하여 역할을 배정하세요.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 배정 현황 탭 -->
-                    <div id="statusContent" class="h-full overflow-y-auto p-6 hidden">
-                        <div class="mb-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-semibold text-gray-700">배정 현황</h3>
-                                <button onclick="refreshAssignmentStatus()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                                    <i class="fas fa-sync mr-2"></i>새로고침
-                                </button>
-                            </div>
-                            <div id="assignmentStatus">
-                                <p class="text-gray-500 text-center py-8">현황을 로드하는 중...</p>
-                            </div>
+                        <div id="sessionsList" class="space-y-4">
+                            <!-- 세션 목록이 여기에 표시됩니다 -->
                         </div>
                     </div>
                 </div>
                 
-                <!-- 모달 푸터 -->
-                <div class="flex justify-end items-center p-6 border-t bg-gray-50">
-                    <div id="modalStatus" class="flex-1 text-sm text-gray-600"></div>
-                    <button onclick="closeRoleModal()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">
-                        닫기
-                    </button>
+                <!-- 배정 관리 탭 -->
+                <div id="assignmentContent" class="h-full overflow-y-auto p-6 hidden">
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-700 mb-4">배정 관리</h3>
+                        <div id="assignmentManagement">
+                            <p class="text-gray-500 text-center py-8">세션을 선택하여 역할을 배정하세요.</p>
+                        </div>
+                    </div>
                 </div>
+                
+                <!-- 배정 현황 탭 -->
+                <div id="statusContent" class="h-full overflow-y-auto p-6 hidden">
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold text-gray-700">배정 현황</h3>
+                            <button onclick="refreshAssignmentStatus()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                <i class="fas fa-sync mr-2"></i>새로고침
+                            </button>
+                        </div>
+                        <div id="assignmentStatus">
+                            <p class="text-gray-500 text-center py-8">현황을 로드하는 중...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 푸터 -->
+            <div class="flex justify-between items-center p-6 border-t bg-gray-50 rounded-b-lg">
+                <div id="interfaceStatus" class="text-sm text-gray-600"></div>
+                <button onclick="closeRoleInterface()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-times mr-2"></i>닫기
+                </button>
             </div>
         </div>
     `;
     
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    container.innerHTML = interfaceHTML;
     console.log('✅ 역할 관리 모달 생성 완료');
 }
 
-function showRoleModal() {
-    console.log('📱 역할 관리 모달 표시');
+function showRoleInterface() {
+    console.log('📱 역할 관리 인터페이스 표시');
     
-    // 모달이 없으면 생성
-    if (!document.getElementById('roleModal')) {
-        createRoleModal();
-    }
+    // 인터페이스 생성
+    createRoleInterface();
     
-    // 모달 표시
-    const modal = document.getElementById('roleModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        
-        // 첫 번째 탭 활성화
-        switchRoleTab('sessions');
-        
-        // 세션 목록 새로고침
-        renderSessionsList();
-        
-        console.log('✅ 역할 관리 모달 표시 완료');
+    // 첫 번째 탭 활성화
+    switchRoleTab('sessions');
+    
+    // 세션 목록 새로고침
+    renderSessionsList();
+    
+    console.log('✅ 역할 관리 인터페이스 표시 완료');
+}
+
+function closeRoleInterface() {
+    console.log('❌ 역할 관리 인터페이스 닫기');
+    
+    const container = document.getElementById('moduleContainer');
+    if (container) {
+        container.style.display = 'none';
     }
 }
 
-function closeRoleModal() {
-    console.log('❌ 역할 관리 모달 닫기');
+// 새 세션 폼 관리 함수들 추가
+function showNewSessionForm() {
+    const form = document.getElementById('newSessionForm');
+    const btn = document.getElementById('createNewSessionBtn');
     
-    const modal = document.getElementById('roleModal');
-    if (modal) {
-        modal.classList.add('hidden');
+    if (form && btn) {
+        form.classList.remove('hidden');
+        btn.style.display = 'none';
+        
+        // 기본값 설정
+        document.getElementById('newSessionName').value = '';
+        document.getElementById('newSessionMissions').value = '["역할1", "역할2", "역할3"]';
+    }
+}
+
+function cancelNewSession() {
+    const form = document.getElementById('newSessionForm');
+    const btn = document.getElementById('createNewSessionBtn');
+    
+    if (form && btn) {
+        form.classList.add('hidden');
+        btn.style.display = 'inline-flex';
+    }
+}
+
+async function saveNewSession() {
+    const name = document.getElementById('newSessionName').value.trim();
+    const missionsText = document.getElementById('newSessionMissions').value.trim();
+    
+    if (!name) {
+        alert('세션 이름을 입력해주세요.');
+        return;
+    }
+    
+    try {
+        const missions = JSON.parse(missionsText);
+        
+        // Supabase에 저장
+        const { data, error } = await rolesSupabaseClient
+            .from('role_assignment_sessions')
+            .insert([{
+                session_name: name,
+                missions: JSON.stringify(missions),
+                status: 'active',
+                created_at: new Date().toISOString()
+            }]);
+        
+        if (error) throw error;
+        
+        console.log('✅ 새 세션 생성 완료:', name);
+        
+        // 폼 닫기 및 목록 새로고침
+        cancelNewSession();
+        await loadSessions();
+        renderSessionsList();
+        
+    } catch (error) {
+        console.error('❌ 세션 생성 실패:', error);
+        alert(`세션 생성에 실패했습니다: ${error.message}`);
     }
 }
 
@@ -813,7 +898,7 @@ async function loadRolesModuleWithUI() {
         await loadAllData();
         
         // 4. UI 생성 및 표시
-        showRoleModal();
+        showRoleInterface();
         
         updateModuleStatus('loaded', `데이터 로드 완료 (세션 ${currentSessions.length}, 학생 ${currentStudents.length}, 배정 ${currentAssignments.length})`);
         console.log('✅ UI 포함 역할배정 모듈 로드 완료');
@@ -1822,9 +1907,12 @@ async function submitEditSession(event, sessionId) {
 // ============ 전역 함수 노출 ============
 window.loadRolesModule = loadRolesModule; // 기본 모듈 로드 함수
 window.loadRolesModuleWithUI = loadRolesModuleWithUI; // UI 포함 모듈 로드 함수
-window.showRoleModal = showRoleModal;
-window.closeRoleModal = closeRoleModal;
+window.showRoleInterface = showRoleInterface;
+window.closeRoleInterface = closeRoleInterface;
 window.switchRoleTab = switchRoleTab;
+window.showNewSessionForm = showNewSessionForm;
+window.cancelNewSession = cancelNewSession;
+window.saveNewSession = saveNewSession;
 window.loadTabContent = loadTabContent;
 window.loadSessionsTab = loadSessionsTab;
 window.loadAssignmentTab = loadAssignmentTab;
