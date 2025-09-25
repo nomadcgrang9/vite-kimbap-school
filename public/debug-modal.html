@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>모달 디버깅</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="p-8">
+        <h1 class="text-2xl font-bold mb-4">모달 디버깅 도구</h1>
+        
+        <button onclick="checkModals()" class="bg-blue-500 text-white px-4 py-2 rounded mb-4">
+            생성된 모달 찾기
+        </button>
+        
+        <button onclick="forceShowModal()" class="bg-red-500 text-white px-4 py-2 rounded mb-4">
+            강제로 모달 보이기
+        </button>
+        
+        <div id="results" class="mt-4 p-4 bg-gray-100 rounded"></div>
+    </div>
+
+    <script>
+        function checkModals() {
+            const results = document.getElementById('results');
+            let output = '<h3>모달 검사 결과:</h3>';
+            
+            // 1. 모든 모달 요소 찾기
+            const modals = document.querySelectorAll('[id*="modal"], [id*="Modal"], .modal');
+            output += `<p>🔍 발견된 모달 요소: ${modals.length}개</p>`;
+            
+            modals.forEach((modal, index) => {
+                const styles = getComputedStyle(modal);
+                output += `<div class="border-l-4 border-blue-500 pl-4 my-2">`;
+                output += `<p><strong>모달 ${index + 1}:</strong> ${modal.id || modal.className}</p>`;
+                output += `<p>display: ${styles.display}</p>`;
+                output += `<p>visibility: ${styles.visibility}</p>`;
+                output += `<p>z-index: ${styles.zIndex}</p>`;
+                output += `<p>position: ${styles.position}</p>`;
+                output += `<p>opacity: ${styles.opacity}</p>`;
+                output += `</div>`;
+            });
+            
+            // 2. 최근 추가된 요소 체크
+            const body = document.body;
+            const children = Array.from(body.children);
+            const recentElements = children.slice(-5);
+            
+            output += `<p>🆕 body의 마지막 5개 요소:</p>`;
+            recentElements.forEach((el, index) => {
+                output += `<p>${index + 1}. ${el.tagName} (id: ${el.id}, class: ${el.className})</p>`;
+            });
+            
+            results.innerHTML = output;
+        }
+        
+        function forceShowModal() {
+            const modals = document.querySelectorAll('[id*="modal"], [id*="Modal"], .modal');
+            
+            modals.forEach(modal => {
+                // 강제로 보이게 만들기
+                modal.style.display = 'flex';
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
+                modal.style.zIndex = '9999';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.right = '0';
+                modal.style.bottom = '0';
+                modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            });
+            
+            document.getElementById('results').innerHTML = '<p class="text-green-600">✅ 모든 모달을 강제로 보이게 설정했습니다!</p>';
+        }
+        
+        // 페이지 로드시 자동 체크
+        setTimeout(() => {
+            checkModals();
+        }, 1000);
+    </script>
+</body>
+</html>

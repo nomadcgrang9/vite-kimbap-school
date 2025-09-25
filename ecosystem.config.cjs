@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'webapp',
       script: 'npm',
-      args: 'run dev -- --host 0.0.0.0 --port 3000',
+      args: 'run dev',
       cwd: '/home/user/webapp',
       env: {
         NODE_ENV: 'development',

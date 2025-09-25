@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학생 배정 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6">🎯 학생 배정 테스트</h1>
+        
+        <!-- 테스트 버튼들 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">🔧 테스트 액션</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button onclick="testDataLoad()" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    📊 데이터 로드 테스트
+                </button>
+                <button onclick="simulateStudentLogin()" 
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    👤 3127 학생 로그인 시뮬레이션
+                </button>
+                <button onclick="testAssignmentLogic()" 
+                        class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                    🎯 배정 로직 테스트
+                </button>
+                <a href="student.html?studentId=3127&studentName=테스트" 
+                   target="_blank"
+                   class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-center">
+                    🚀 실제 학생페이지 열기
+                </a>
+            </div>
+        </div>
+
+        <!-- 테스트 결과 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">📋 테스트 결과</h2>
+            <div id="testResults" class="bg-gray-900 text-green-400 p-4 rounded text-sm font-mono h-96 overflow-y-auto">
+                테스트를 실행하려면 위의 버튼을 클릭하세요...
+            </div>
+        </div>
+    </div>
+
+    <script src="static/supabase-config.js"></script>
+    <script>
+        let assignments = [];
+        let sessions = [];
+        let testStudent = {
+            studentId: '3127',
+            name: '테스트',
+            grade: 3,
+            classNum: 1,
+            fullClass: '3-1'
+        };
+
+        function log(message, type = 'info') {
+            const resultEl = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: 'text-green-400',
+                success: 'text-cyan-400 font-bold',
+                error: 'text-red-400 font-bold',
+                warning: 'text-yellow-400'
+            };
+            
+            resultEl.innerHTML += `<div class="${colors[type] || colors.info}">[${timestamp}] ${message}</div>`;
+            resultEl.scrollTop = resultEl.scrollHeight;
+            console.log('[테스트]', message);
+        }
+
+        async function testDataLoad() {
+            log('🔍 데이터 로드 테스트 시작', 'success');
+            
+            try {
+                // Assignments 로드
+                log('📊 Assignments 테이블 조회 중...');
+                const { data: assignmentsData, error: assignError } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (assignError) throw assignError;
+
+                assignments = assignmentsData || [];
+                log(`✅ Assignments 로드 완료: ${assignments.length}개`);
+
+                if (assignments.length > 0) {
+                    log(`📌 첫 번째 배정: ${assignments[0].role_name} (${assignments[0].role_type})`);
+                }
+
+                // Sessions 로드
+                log('📊 Sessions 테이블 조회 중...');
+                const { data: sessionsData, error: sessionError } = await supabase
+                    .from('sessions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (sessionError) throw sessionError;
+
+                sessions = sessionsData || [];
+                log(`✅ Sessions 로드 완료: ${sessions.length}개`);
+
+                if (sessions.length > 0) {
+                    log(`📌 첫 번째 세션: ${sessions[0].name}`);
+                }
+
+                log('🎉 데이터 로드 테스트 완료', 'success');
+
+            } catch (error) {
+                log(`❌ 데이터 로드 실패: ${error.message}`, 'error');
+                console.error('데이터 로드 오류:', error);
+            }
+        }
+
+        async function simulateStudentLogin() {
+            log('👤 학생 로그인 시뮬레이션 시작', 'success');
+            log(`학생 정보: ${testStudent.studentId} - ${testStudent.name} (${testStudent.fullClass})`);
+
+            // 먼저 데이터 로드
+            if (assignments.length === 0) {
+                await testDataLoad();
+            }
+
+            // 학생 배정 찾기 로직 실행
+            await testAssignmentLogic();
+        }
+
+        async function testAssignmentLogic() {
+            log('🎯 배정 로직 테스트 시작', 'success');
+
+            if (assignments.length === 0) {
+                log('❌ 배정 데이터가 없습니다. 먼저 데이터 로드를 실행하세요.', 'error');
+                return;
+            }
+
+            log(`현재 학생: ${testStudent.studentId} (${testStudent.fullClass})`);
+            log(`전체 배정 수: ${assignments.length}개`);
+
+            // 학생별 배정 찾기 (실제 student.js 로직과 동일)
+            let studentAssignments = assignments.filter(a => {
+                const studentIdFromDB = a.student_id || a.studentId;
+                const isForThisStudent = studentIdFromDB === testStudent.studentId;
+                const isActive = !a.status || a.status === 'active';
+
+                log(`🔍 배정 체크: ID=${a.id?.slice(0, 8)}... 역할=${a.role_name} 학생ID=${studentIdFromDB} 매치=${isForThisStudent} 활성=${isActive}`);
+
+                return isForThisStudent && isActive;
+            });
+
+            log(`✅ 학생별 배정 찾기 결과: ${studentAssignments.length}개`, studentAssignments.length > 0 ? 'success' : 'warning');
+
+            if (studentAssignments.length > 0) {
+                const assignment = studentAssignments[0];
+                log(`🎉 발견된 배정:`, 'success');
+                log(`  - 역할명: ${assignment.role_name}`);
+                log(`  - 역할 타입: ${assignment.role_type}`);
+                log(`  - 세션명: ${assignment.session_name}`);
+                log(`  - 배정 시간: ${assignment.assigned_at}`);
+
+                // 세션 정보 찾기
+                const relatedSession = sessions.find(s => s.id === assignment.session_id);
+                if (relatedSession) {
+                    log(`📋 관련 세션 정보:`, 'info');
+                    log(`  - 세션명: ${relatedSession.name}`);
+                    log(`  - 활동방법 안내: ${relatedSession.activity_instructions}`);
+                    
+                    try {
+                        const missions = JSON.parse(relatedSession.missions);
+                        log(`  - 역할 개수: ${missions.length}개`);
+                    } catch (e) {
+                        log(`  - 미션 파싱 오류: ${e.message}`, 'error');
+                    }
+                }
+
+                log('🎯 배정이 정상적으로 발견되었습니다! 학생페이지에서 표시되어야 합니다.', 'success');
+
+            } else {
+                log('❌ 학생에게 배정된 역할이 없습니다.', 'error');
+                
+                // 반별 배정 확인 (추가 체크)
+                log('🔍 반별 배정 확인 중...');
+                const classAssignments = assignments.filter(a => {
+                    const targetClassFromDB = a.target_class || a.targetClass;
+                    const classMatch = targetClassFromDB === testStudent.fullClass;
+                    const statusMatch = !a.status || a.status === 'active';
+                    
+                    log(`🔍 반별 체크: 대상반=${targetClassFromDB} 현재반=${testStudent.fullClass} 매치=${classMatch} 활성=${statusMatch}`);
+                    
+                    return classMatch && statusMatch;
+                });
+
+                if (classAssignments.length > 0) {
+                    log(`⚠️ 반별 배정은 ${classAssignments.length}개 있지만, 개별 배정이 우선됩니다.`, 'warning');
+                } else {
+                    log('❌ 반별 배정도 없습니다.', 'error');
+                }
+            }
+
+            log('🏁 배정 로직 테스트 완료', 'success');
+        }
+
+        // 페이지 로드 시 자동으로 기본 정보 표시
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 학생 배정 테스트 페이지 로드됨', 'success');
+            log('테스트할 학생: 3127 - 테스트 (3-1반)');
+            log('버튼을 클릭하여 테스트를 시작하세요.', 'info');
+        });
+    </script>
+</body>
+</html>

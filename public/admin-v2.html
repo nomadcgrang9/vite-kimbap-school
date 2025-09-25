@@ -104,23 +104,25 @@
                     역할 배정
                 </h3>
                 <p class="text-sm text-gray-600 mb-4">학생들에게 역할과 미션을 배정합니다.</p>
-                <button onclick="loadRolesModuleWrapper()" class="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600 transition">
+                <button onclick="window.location.href='role-management.html'" class="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600 transition">
                     <i class="fas fa-arrow-right mr-2"></i>역할 배정 열기
                 </button>
                 <div id="rolesModuleStatus" class="mt-2 text-xs"></div>
             </div>
 
-            <!-- 4. 스테이지 설정 -->
+            <!-- 4. 단계별 내용 관리 -->
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h3 class="text-lg font-bold text-gray-800 mb-4">
-                    <i class="fas fa-flag-checkered text-orange-500 mr-2"></i>
-                    오늘의 할일 설정
+                    <i class="fas fa-tasks text-orange-500 mr-2"></i>
+                    단계별 내용 관리
                 </h3>
-                <p class="text-sm text-gray-600 mb-4">스테이지별 설명과 포인트를 설정합니다.</p>
-                <button onclick="loadStageConfigModule()" class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">
-                    <i class="fas fa-arrow-right mr-2"></i>스테이지 설정 열기
+                <p class="text-sm text-gray-600 mb-4">학생페이지 "오늘의 할일"의 단계 제목, 설명, 아이콘을 수정합니다.</p>
+                <button onclick="openStageContentManager()" class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">
+                    <i class="fas fa-edit mr-2"></i>단계별 내용 수정
                 </button>
-                <div id="stageConfigStatus" class="mt-2 text-xs"></div>
+                <div id="stageContentStatus" class="mt-2 text-xs text-gray-500">
+                    1단계, 2단계, 3단계의 제목과 설명 수정 가능
+                </div>
             </div>
 
             <!-- 5. 학습 안내 -->
@@ -412,83 +414,38 @@
             }
         }
         // 모든 모듈 로딩 함수들 정의 (loadPointsModule, loadStudentsModule는 이미 위에서 정의됨)
-        async function loadRolesModuleWrapper() { 
+        // 🔧 역할배정 관리 - 새 전용 페이지로 이동 (모달 차단)
+        function loadRolesModuleWrapper() { 
             try {
-                log('역할배정 모듈 로딩 시작');
+                console.log('🚀 [FIXED] 역할배정 관리 페이지로 이동 중...');
+                
+                // 기존 모달이나 이벤트 리스너 완전 제거
+                const existingModals = document.querySelectorAll('[id*="rolesModal"], [id*="roleModal"], .modal, .modal-backdrop');
+                existingModals.forEach(modal => {
+                    if (modal && modal.parentNode) {
+                        modal.parentNode.removeChild(modal);
+                    }
+                });
+                
+                // 전역 함수 덮어쓰기 방지
+                if (window.loadRolesModuleWithUI) {
+                    delete window.loadRolesModuleWithUI;
+                }
                 
                 const statusDiv = document.getElementById('rolesModuleStatus');
                 if (statusDiv) {
-                    statusDiv.innerHTML = '<span class="text-blue-500">로딩 중...</span>';
+                    statusDiv.innerHTML = '<span class="text-blue-500">📄 새 페이지로 이동 중...</span>';
                 }
                 
-                // admin-rolesv2.js 직접 로드
-                const existingScript = document.querySelector('script[src*="admin-rolesv2.js"]');
-                if (!existingScript) {
-                    const script = document.createElement('script');
-                    script.src = `static/admin-rolesv2.js?v=${Date.now()}`;
-                    
-                    script.onload = async () => {
-                        log('admin-rolesv2.js 로드 성공', 'success');
-                        
-                        // loadRolesModuleWithUI 함수 확인 및 실행
-                        if (typeof window.loadRolesModuleWithUI === 'function') {
-                            try {
-                                log('loadRolesModuleWithUI 실행 중...');
-                                await window.loadRolesModuleWithUI();
-                                
-                                if (statusDiv) {
-                                    statusDiv.innerHTML = '<span class="text-green-500">✅ 성공</span>';
-                                }
-                                log('역할배정 모듈 로딩 완료', 'success');
-                            } catch (error) {
-                                log(`loadRolesModuleWithUI 실행 실패: ${error.message}`, 'error');
-                                if (statusDiv) {
-                                    statusDiv.innerHTML = '<span class="text-red-500">❌ 실행 실패</span>';
-                                }
-                            }
-                        } else {
-                            log('loadRolesModuleWithUI 함수를 찾을 수 없음', 'error');
-                            if (statusDiv) {
-                                statusDiv.innerHTML = '<span class="text-red-500">❌ 함수 없음</span>';
-                            }
-                        }
-                    };
-                    
-                    script.onerror = () => {
-                        log('admin-rolesv2.js 로드 실패', 'error');
-                        if (statusDiv) {
-                            statusDiv.innerHTML = '<span class="text-red-500">❌ 로드 실패</span>';
-                        }
-                    };
-                    
-                    document.head.appendChild(script);
-                } else {
-                    // 이미 로드된 경우 바로 실행
-                    if (typeof window.loadRolesModuleWithUI === 'function') {
-                        try {
-                            log('기존 로드된 모듈 실행 중...');
-                            await window.loadRolesModuleWithUI();
-                            
-                            if (statusDiv) {
-                                statusDiv.innerHTML = '<span class="text-green-500">✅ 성공</span>';
-                            }
-                            log('역할배정 모듈 실행 완료', 'success');
-                        } catch (error) {
-                            log(`모듈 실행 실패: ${error.message}`, 'error');
-                            if (statusDiv) {
-                                statusDiv.innerHTML = '<span class="text-red-500">❌ 실행 실패</span>';
-                            }
-                        }
-                    } else {
-                        log('loadRolesModuleWithUI 함수를 찾을 수 없음', 'error');
-                        if (statusDiv) {
-                            statusDiv.innerHTML = '<span class="text-red-500">❌ 함수 없음</span>';
-                        }
-                    }
-                }
+                // 강제로 새 페이지로 이동 (모달 차단)
+                console.log('🔄 Redirecting to role-management.html...');
+                setTimeout(() => {
+                    window.location.href = 'role-management.html';
+                }, 100);
                 
             } catch (error) {
-                log(`역할배정 모듈 로딩 오류: ${error.message}`, 'error');
+                console.error('🚨 [FIXED] 역할배정 이동 오류:', error);
+                log(`역할배정 이동 실패: ${error.message}`, 'error');
             }
         }
         function loadStagesModule() { loadModule('stages', 'stages', true); }
@@ -2084,6 +2041,12 @@ repliesList.innerHTML = `
     
     <!-- 전역 함수 등록 (모든 함수 정의 완료 후) -->
     <script>
+        // 단계별 내용 관리 페이지로 이동하는 함수
+        function openStageContentManager() {
+            console.log('[Admin] 단계별 내용 관리 페이지로 이동');
+            window.location.href = 'admin-stage-content.html';
+        }
+
         // 모든 스크립트 로드 완료 후 전역 함수 등록
         window.addEventListener('load', function() {
             console.log('[Admin] 모든 스크립트 로드 완료 - 전역 함수 등록 시작');
@@ -2093,13 +2056,22 @@ repliesList.innerHTML = `
             if (typeof loadLuckyDrawModule === 'function') window.loadLuckyDrawModule = loadLuckyDrawModule;
             if (typeof loadStudentsModule === 'function') window.loadStudentsModule = loadStudentsModule;  
             if (typeof loadPointsModule === 'function') window.loadPointsModule = loadPointsModule;
-            if (typeof loadRolesModuleWrapper === 'function') window.loadRolesModuleWrapper = loadRolesModuleWrapper;
+            // 🔧 역할배정 함수 강제 등록 (모달 차단)
+            window.loadRolesModuleWrapper = loadRolesModuleWrapper;
+            console.log('✅ [FIXED] loadRolesModuleWrapper 강제 등록됨 - 모달 차단됨');
             if (typeof loadStagesModule === 'function') window.loadStagesModule = loadStagesModule;
             if (typeof loadGuidesModule === 'function') window.loadGuidesModule = loadGuidesModule;
             if (typeof loadSpinnerModule === 'function') window.loadSpinnerModule = loadSpinnerModule;
             if (typeof checkSystemStatus === 'function') window.checkSystemStatus = checkSystemStatus;
+            if (typeof openStageContentManager === 'function') window.openStageContentManager = openStageContentManager;
             
             console.log('[Admin] 전역 함수 등록 완료');
+            
+            // 🔧 추가 보안: DOM 조작으로 강제 함수 재등록
+            setTimeout(() => {
+                window.loadRolesModuleWrapper = loadRolesModuleWrapper;
+                console.log('🔒 [SECURITY] loadRolesModuleWrapper 보안 재등록 완료');
+            }, 500);
             
             // 시스템 상태 체크
             if (typeof checkSystemStatus === 'function') {

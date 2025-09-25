@@ -1,4 +1,5 @@
 // Student JavaScript for Role Assignment System
+console.log('🚀 [INIT] student.js 파일이 로드되었습니다!');
 
 // Note: Global variables (currentStudent, currentAssignment, assignments, sessions) 
 // are already declared in main.js
@@ -108,18 +109,32 @@ function initializeStudent() {
 
 // Check URL parameters for student info
 function checkURLParameters() {
+    console.log('🔍 [URL Check] URL 파라미터 확인 시작');
+    
     const urlParams = new URLSearchParams(window.location.search);
-    const studentId = urlParams.get('studentId');
-    const studentName = urlParams.get('studentName');
+    const studentId = urlParams.get('studentId') || urlParams.get('id'); // id도 지원
+    const studentName = urlParams.get('studentName') || urlParams.get('name'); // name도 지원
     const autoFix = urlParams.get('autoFix'); // 자동 assignment 수정 플래그
     
+    console.log('🔍 [URL Check] 파싱 결과:', {
+        studentId,
+        studentName,
+        autoFix,
+        fullURL: window.location.href
+    });
+    
     if (studentId && studentName) {
+        console.log('🔍 [URL Check] 자동 로그인 시작');
+        
         // Auto-fill the form
         document.getElementById('loginStudentId').value = studentId;
         document.getElementById('loginStudentName').value = studentName;
         
+        console.log('🔍 [URL Check] 폼 필드 자동 입력 완료');
+        
         // Auto-submit the form
         setTimeout(() => {
+            console.log('🔍 [URL Check] 자동 로그인 함수 호출');
             // Directly call studentLogin function
             studentLogin({ preventDefault: () => {} });
             
@@ -146,6 +161,8 @@ function checkURLParameters() {
                 }, 5000);
             }
         }, 100);
+    } else {
+        console.log('🔍 [URL Check] URL 파라미터 없음, 수동 로그인 필요');
     }
 }
 
@@ -165,7 +182,10 @@ function checkSavedLogin() {
             }
             
             console.log('Restored student from session storage:', currentStudent.studentId, currentStudent.name);
-            showRole();
+            console.log('🔧 [Session Fix] 세션 복원 후 역할 확인 시작');
+            
+            // 세션 복원 시에도 역할 확인 과정을 거쳐야 함
+            checkStudentAssignment();
             
             // Start teacher point notification check for saved login
             startTeacherPointNotificationCheck();
@@ -189,8 +209,12 @@ function checkSavedLogin() {
 async function studentLogin(event) {
     event.preventDefault();
     
+    console.log('🔐 [Login] studentLogin 시작');
+    
     const studentId = document.getElementById('loginStudentId').value.trim();
     const studentName = document.getElementById('loginStudentName').value.trim();
+    
+    console.log('🔐 [Login] 입력 데이터:', { studentId, studentName });
     
     if (!studentId || !studentName) {
         showError('학번과 이름을 모두 입력해주세요.');
@@ -204,9 +228,12 @@ async function studentLogin(event) {
     
     // Show loading
     showLoading();
+    console.log('🔐 [Login] 로딩 화면 표시');
     
     // Parse and validate student ID
     const parsedId = window.parseStudentId(studentId);
+    console.log('🔐 [Login] parseStudentId 결과:', parsedId);
+    
     if (!parsedId) {
         hideLoading();
         showError('잘못된 학번 형식입니다.');
@@ -230,13 +257,18 @@ async function studentLogin(event) {
         fullClass: parsedId.fullClass
     };
     
+    console.log('🔐 [Login] currentStudent 설정:', currentStudent);
+    console.log('🔐 [Login] number 값 확인:', currentStudent.number, '(타입:', typeof currentStudent.number, ')');
+    
     // Save to session storage
     sessionStorage.setItem('currentStudent', JSON.stringify(currentStudent));
     
     // Auto-register student
+    console.log('🔐 [Login] autoRegisterStudent 호출');
     await autoRegisterStudent();
     
     // Check for assignment
+    console.log('🔐 [Login] checkStudentAssignment 호출');
     await checkStudentAssignment();
     
     // SimplePoint 시스템 초기화 - 로그인 즉시!
@@ -331,7 +363,15 @@ async function autoRegisterStudent() {
         }
         
         // localStorage도 동시에 업데이트 (백업용)
-        let students = JSON.parse(localStorage.getItem('students') || '[]');
+        let students = [];
+        try {
+            const storedStudents = localStorage.getItem('students');
+            students = storedStudents ? JSON.parse(storedStudents) : [];
+        } catch (parseError) {
+            console.warn('localStorage students 파싱 실패, 초기화:', parseError);
+            students = [];
+            localStorage.removeItem('students');
+        }
         console.log('[AutoRegister] localStorage 현재 학생 수:', students.length);
         
         const existingLocalStudent = students.find(s => s.studentId === currentStudent.studentId);
@@ -482,10 +522,14 @@ async function loadSessions() {
 
 // Check if student has an assignment
 async function checkStudentAssignment() {
+    console.log('🎯 [Assignment Check] checkStudentAssignment 시작');
+    
     // Reload assignments to get latest data
+    console.log('🎯 [Assignment Check] assignments 재로드');
     await loadAssignments();
     
     // Load sessions for displaying assignment details
+    console.log('🎯 [Assignment Check] sessions 재로드');
     await loadSessions();
     
     console.log('🔍 [Assignment Check] 현재 학생 정보:', currentStudent);
@@ -505,33 +549,28 @@ async function checkStudentAssignment() {
     }
     
     // 🔥 NEW: 관리자가 생성한 배정 데이터에서 직접 찾기
+    console.log('🔍 [직접 찾기] 1번 학생 assignment 직접 검색');
+    
     let studentAssignments = assignments.filter(a => {
-        // 학생 ID와 상태가 active인 배정만 찾기 (Supabase에서는 student_id 필드 사용)
-        const studentIdFromDB = a.student_id || a.studentId; // Supabase는 student_id, localStorage는 studentId
-        const isForThisStudent = studentIdFromDB === currentStudent.studentId;
+        const studentIdFromDB = a.student_id || a.studentId;
+        const isForThisStudent = studentIdFromDB == currentStudent.number;
         const isActive = !a.status || a.status === 'active';
-        
-        console.log('🔍 [Assignment Filter]', {
-            assignmentId: a.id,
-            studentIdFromDB: studentIdFromDB,
-            originalStudentId: a.studentId,
-            dbStudentId: a.student_id,
-            currentStudentId: currentStudent.studentId,
-            isForThisStudent,
-            status: a.status,
-            isActive,
-            match: isForThisStudent && isActive,
-            // 타입 비교도 추가
-            studentIdType: typeof studentIdFromDB,
-            currentIdType: typeof currentStudent.studentId,
-            strictEqual: studentIdFromDB === currentStudent.studentId,
-            looseEqual: studentIdFromDB == currentStudent.studentId
-        });
-        
         return isForThisStudent && isActive;
     });
     
+    console.log('🔍 [직접 찾기 결과]', {
+        찾은개수: studentAssignments.length,
+        찾는번호: currentStudent.number,
+        타입: typeof currentStudent.number
+    });
+    
     console.log('🎯 [Assignment Check] 직접 배정 찾기 결과:', studentAssignments.length, '개');
+    
+    if (studentAssignments.length > 0) {
+        console.log('🎉 [SUCCESS] 매칭된 Assignment 발견!', studentAssignments[0]);
+    } else {
+        console.log('❌ [FAILED] 매칭된 Assignment 없음. 1번 학생용 Assignment가 DB에 있는지 확인 필요');
+    }
     
     // 🔍 배정 데이터 상세 로깅
     if (studentAssignments.length > 0) {
@@ -687,6 +726,10 @@ async function showRole() {
     console.log('[showRole] Auto-registering student:', currentStudent);
     await autoRegisterStudent();
     
+    // 🔧 FIX: F5 새로고침 시 역할배정 카드 표시 문제 해결
+    console.log('🔧 [F5 FIX] showRole에서 checkStudentAssignment 호출');
+    await checkStudentAssignment();
+    
     // Initialize point system
     initializePointSystem();
     
@@ -703,8 +746,29 @@ async function showRole() {
 
 // Show no role message
 function showNoRole() {
-    document.getElementById('noRoleMessage').classList.remove('hidden');
-    document.getElementById('roleCard').classList.add('hidden');
+    console.log('🔧 [showNoRole] 역할 없음 화면 표시 시작');
+    
+    // 핵심: noRoleMessage 표시, roleDisplay는 완전히 숨김
+    const noRoleMessage = document.getElementById('noRoleMessage');
+    const roleDisplay = document.getElementById('roleDisplay');
+    const roleCard = document.getElementById('roleCard');
+    
+    if (noRoleMessage) {
+        noRoleMessage.classList.remove('hidden');
+        console.log('🔧 [showNoRole] noRoleMessage 표시됨');
+    } else {
+        console.error('🔧 [showNoRole] noRoleMessage 요소를 찾을 수 없음!');
+    }
+    
+    if (roleDisplay) {
+        roleDisplay.classList.add('hidden');
+        console.log('🔧 [showNoRole] roleDisplay 숨김');
+    }
+    
+    if (roleCard) {
+        roleCard.classList.add('hidden');
+        console.log('🔧 [showNoRole] roleCard 숨김');
+    }
     
     // 새로운 UI 구조에서도 기본값 설정
     const mainRoleTitle = document.getElementById('mainRoleTitle');
@@ -715,7 +779,7 @@ function showNoRole() {
     // 🔧 FIX: 역할이 없을 때도 detailMissions에 기본 메시지 설정
     const detailElement = document.getElementById('detailMissions');
     if (detailElement) {
-        detailElement.textContent = '🔧 [수정됨] 역할 배정 시스템이 업데이트되었습니다!';
+        detailElement.textContent = '선생님이 역할을 배정할 때까지 잠시 기다려주세요.';
     }
     
     // 이미지 컨테이너 숨기기
@@ -723,6 +787,8 @@ function showNoRole() {
     if (roleImageContainer) {
         roleImageContainer.classList.add('hidden');
     }
+    
+    console.log('🔧 [showNoRole] 역할 없음 화면 설정 완료');
 }
 
 // Display the assigned role
@@ -2105,6 +2171,11 @@ async function updateStageButtons() {
             icon.className = 'w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs bg-gray-400';
         }
     }
+    
+    // 뽑기 상태 업데이트 (2단계 완료 여부에 따라)
+    if (typeof updateLuckyDrawStatus === 'function') {
+        setTimeout(() => updateLuckyDrawStatus(), 100);
+    }
 }
 
 // Load and apply stage descriptions from admin settings
@@ -3248,7 +3319,15 @@ async function loadBoardContent() {
         console.error('실시간 칠판 내용 로드 실패:', error);
         
         // 실시간 칠판만 fallback 처리 (앞면은 건드리지 않음)
-        const localBoardData = JSON.parse(localStorage.getItem('boardContent') || '{}');
+        let localBoardData = {};
+        try {
+            const storedData = localStorage.getItem('boardContent');
+            localBoardData = storedData ? JSON.parse(storedData) : {};
+        } catch (parseError) {
+            console.warn('localStorage boardContent 파싱 실패, 초기화:', parseError);
+            localBoardData = {};
+            localStorage.removeItem('boardContent'); // 깨진 데이터 제거
+        }
         
         const liveBoardElement = document.getElementById('liveBoardContent');
         if (liveBoardElement) {
@@ -3712,3 +3791,277 @@ window.testActivityInstructions = function() {
         console.log('detailMissions 현재 내용:', detailElement.textContent);
     }
 };
+
+// ============ 오늘의 뽑기 시스템 ============
+
+// 전역 변수
+let todayLuckyDrawStatus = {
+    canDraw: false,        // 뽑기 가능 여부 (2단계 완료)
+    alreadyDrawn: false,   // 오늘 이미 뽑았는지
+    drawnMessage: null     // 오늘 뽑은 메시지
+};
+
+// 오늘의할일 카드 플립 토글 함수
+function toggleDailyTasksCard() {
+    console.log('🚨 [DEBUG] toggleDailyTasksCard 함수 호출됨!');
+    console.log('[LuckyDraw] 오늘의할일 카드 클릭됨');
+    
+    const flipCard = document.getElementById('dailyTasksFlipCard');
+    console.log('🔍 [DEBUG] flipCard 요소:', flipCard);
+    if (!flipCard) {
+        console.error('❌ [ERROR] dailyTasksFlipCard 요소를 찾을 수 없습니다!');
+        return;
+    }
+    
+    // === 상세 디버깅 로그 추가 ===
+    console.log('🔍 [DEBUG] dailyPoints 전체 객체:', dailyPoints);
+    console.log('🔍 [DEBUG] dailyPoints 존재 여부:', !!dailyPoints);
+    console.log('🔍 [DEBUG] stage2_count 값:', dailyPoints?.stage2_count);
+    console.log('🔍 [DEBUG] stageStates 객체:', stageStates);
+    console.log('🔍 [DEBUG] stageStates[2] 완료 상태:', stageStates?.[2]?.completed);
+    
+    // 2단계 완료 여부 확인
+    const stage2Completed = dailyPoints && dailyPoints.stage2_count >= 1;
+    console.log('[LuckyDraw] 2단계 완료 여부:', stage2Completed);
+    
+    if (!stage2Completed) {
+        showNotification('2단계를 먼저 완료해주세요!', 'warning');
+        return;
+    }
+    
+    // 플립 실행
+    flipCard.classList.toggle('flipped');
+    
+    // 뽑기 상태 업데이트
+    updateLuckyDrawStatus();
+}
+
+// 전역 스코프에 함수 명시적 노출
+window.toggleDailyTasksCard = toggleDailyTasksCard;
+
+// 뽑기 상태 업데이트 함수
+async function updateLuckyDrawStatus() {
+    console.log('[LuckyDraw] 뽑기 상태 업데이트 시작');
+    
+    if (!currentStudent || !currentStudent.studentId) {
+        console.log('[LuckyDraw] 학생 정보 없음');
+        return;
+    }
+    
+    try {
+        // 2단계 완료 여부 확인
+        const stage2Completed = dailyPoints && dailyPoints.stage2_count >= 1;
+        todayLuckyDrawStatus.canDraw = stage2Completed;
+        
+        // 오늘 뽑기 기록 확인
+        const today = new Date().toISOString().split('T')[0];
+        console.log('🔍 [DEBUG] 뽑기 기록 확인 시작:', { studentId: currentStudent.studentId, today });
+        
+        const { data: historyData, error: historyError } = await supabaseClient
+            .from('lucky_draw_history')
+            .select('*')
+            .eq('student_id', currentStudent.studentId)
+            .eq('draw_date', today);
+        
+        console.log('🔍 [DEBUG] 뽑기 기록 조회 결과:', { historyData, historyError });
+        
+        if (!historyError) {
+            const todayDraw = historyData && historyData.length > 0 ? historyData[0] : null;
+            
+            if (todayDraw) {
+                todayLuckyDrawStatus.alreadyDrawn = true;
+                todayLuckyDrawStatus.drawnMessage = todayDraw.message_drawn;
+                console.log('[LuckyDraw] 오늘 이미 뽑기 완료:', todayDraw.message_drawn);
+            } else {
+                todayLuckyDrawStatus.alreadyDrawn = false;
+                todayLuckyDrawStatus.drawnMessage = null;
+                console.log('[LuckyDraw] 오늘 뽑기 가능');
+            }
+        }
+        
+        // UI 업데이트
+        updateLuckyDrawUI();
+        
+    } catch (error) {
+        console.error('[LuckyDraw] 뽑기 상태 확인 실패:', error);
+    }
+}
+
+// 뽑기 UI 업데이트
+function updateLuckyDrawUI() {
+    const availableDiv = document.getElementById('luckyDrawAvailable');
+    const unavailableDiv = document.getElementById('luckyDrawUnavailable');
+    const completedDiv = document.getElementById('luckyDrawCompleted');
+    const flipHint = document.getElementById('flipHint');
+    const todayDrawMessage = document.getElementById('todayDrawMessage');
+    
+    if (!availableDiv || !unavailableDiv || !completedDiv) return;
+    
+    // 모든 상태 숨기기
+    availableDiv.classList.add('hidden');
+    unavailableDiv.classList.add('hidden');
+    completedDiv.classList.add('hidden');
+    
+    if (todayLuckyDrawStatus.alreadyDrawn) {
+        // 이미 뽑기 완료
+        completedDiv.classList.remove('hidden');
+        if (todayDrawMessage) {
+            todayDrawMessage.textContent = todayLuckyDrawStatus.drawnMessage || '알 수 없는 결과';
+        }
+        if (flipHint) flipHint.classList.add('hidden');
+        
+    } else if (todayLuckyDrawStatus.canDraw) {
+        // 뽑기 가능
+        availableDiv.classList.remove('hidden');
+        if (flipHint) flipHint.classList.remove('hidden');
+        
+    } else {
+        // 조건 미충족 (2단계 미완료)
+        unavailableDiv.classList.remove('hidden');
+        if (flipHint) flipHint.classList.add('hidden');
+    }
+    
+    console.log('[LuckyDraw] UI 업데이트 완료:', {
+        canDraw: todayLuckyDrawStatus.canDraw,
+        alreadyDrawn: todayLuckyDrawStatus.alreadyDrawn,
+        drawnMessage: todayLuckyDrawStatus.drawnMessage
+    });
+}
+
+// 뽑기 실행 함수
+async function performLuckyDraw() {
+    console.log('[LuckyDraw] 뽑기 실행 시작');
+    
+    if (!currentStudent || !currentStudent.studentId) {
+        showNotification('학생 정보를 찾을 수 없습니다.', 'error');
+        return;
+    }
+    
+    if (!todayLuckyDrawStatus.canDraw) {
+        showNotification('2단계를 먼저 완료해주세요!', 'warning');
+        return;
+    }
+    
+    if (todayLuckyDrawStatus.alreadyDrawn) {
+        showNotification('오늘 이미 뽑기를 했습니다!', 'warning');
+        return;
+    }
+    
+    try {
+        // 뽑기 메시지 목록 가져오기
+        console.log('🔍 [DEBUG] 뽑기 메시지 목록 조회 시작');
+        const { data: messages, error: messagesError } = await supabaseClient
+            .from('lucky_draw_messages')
+            .select('*')
+            .eq('is_active', true);
+        
+        console.log('🔍 [DEBUG] 뽑기 메시지 조회 결과:', { messages, messagesError });
+        
+        if (messagesError) {
+            throw new Error('뽑기 메시지를 불러올 수 없습니다.');
+        }
+        
+        if (messages.length === 0) {
+            throw new Error('사용 가능한 뽑기 메시지가 없습니다.');
+        }
+        
+        // 랜덤 메시지 선택
+        const randomIndex = Math.floor(Math.random() * messages.length);
+        const selectedMessage = messages[randomIndex];
+        
+        console.log('[LuckyDraw] 선택된 메시지:', selectedMessage.message_text);
+        
+        // 뽑기 기록 저장
+        const today = new Date().toISOString().split('T')[0];
+        const drawRecord = {
+            student_id: currentStudent.studentId,
+            student_name: currentStudent.name,
+            class_info: currentStudent.fullClass,
+            draw_date: today,
+            message_drawn: selectedMessage.message_text,
+            message_id: selectedMessage.id
+        };
+        
+        console.log('🔍 [DEBUG] 뽑기 기록 저장 시작:', drawRecord);
+        
+        const { data: saveData, error: saveError } = await supabaseClient
+            .from('lucky_draw_history')
+            .insert([drawRecord])
+            .select();
+        
+        console.log('🔍 [DEBUG] 뽑기 기록 저장 결과:', { saveData, saveError });
+        
+        if (saveError) {
+            throw new Error('뽑기 결과 저장에 실패했습니다.');
+        }
+        
+        // 상태 업데이트
+        todayLuckyDrawStatus.alreadyDrawn = true;
+        todayLuckyDrawStatus.drawnMessage = selectedMessage.message_text;
+        
+        // 결과 모달 표시
+        showLuckyDrawResult(selectedMessage.message_text);
+        
+        // UI 업데이트
+        updateLuckyDrawUI();
+        
+        console.log('[LuckyDraw] 뽑기 완료:', selectedMessage.message_text);
+        
+    } catch (error) {
+        console.error('[LuckyDraw] 뽑기 실행 실패:', error);
+        showNotification('뽑기 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 뽑기 결과 모달 표시
+function showLuckyDrawResult(message) {
+    const modalHtml = `
+        <div id="luckyDrawResultModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4 text-center">
+                <div class="mb-6">
+                    <div class="text-6xl mb-4">🎉</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">뽑기 결과</h2>
+                </div>
+                
+                <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 rounded-lg mb-6">
+                    <div class="text-3xl mb-2">🎁</div>
+                    <p class="text-lg font-bold">${message}</p>
+                </div>
+                
+                <button onclick="closeLuckyDrawResult()" 
+                        class="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition font-bold">
+                    확인
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// 뽑기 결과 모달 닫기
+function closeLuckyDrawResult() {
+    const modal = document.getElementById('luckyDrawResultModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// 스테이지 완료 후 뽑기 힌트 업데이트 (기존 함수 수정 필요)
+function updateStageButtonsWithLuckyDraw() {
+    // 기존 updateStageButtons 함수 호출
+    updateStageButtons();
+    
+    // 뽑기 상태 업데이트
+    updateLuckyDrawStatus();
+}
+
+// 페이지 로드 시 뽑기 상태 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    // 기존 이벤트가 처리된 후 뽑기 상태 초기화
+    setTimeout(() => {
+        if (typeof updateLuckyDrawStatus === 'function') {
+            updateLuckyDrawStatus();
+        }
+    }, 1000);
+});

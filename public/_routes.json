@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "include": [
+    "/api/*",
+    "/tables/*"
+  ],
+  "exclude": [
+    "/assets/*",
+    "/static/*",
+    "/*.html",
+    "/*.js",
+    "/*.css",
+    "/*.ico",
+    "/*.png",
+    "/*.jpg",
+    "/*.gif"
+  ]
+}

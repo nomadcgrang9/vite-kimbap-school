@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자동 배정 정리</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6">🔧 자동 배정 정리 실행 중</h1>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">📋 작업 진행 상황</h2>
+            <div id="statusLog" class="bg-gray-900 text-green-400 p-4 rounded text-sm font-mono h-96 overflow-y-auto"></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">🎯 다음 단계</h2>
+            <div id="nextSteps" class="text-gray-600">
+                작업 완료 후 다음 단계가 표시됩니다...
+            </div>
+        </div>
+    </div>
+
+    <script src="static/supabase-config.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('statusLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: 'text-green-400',
+                success: 'text-cyan-400 font-bold',
+                error: 'text-red-400 font-bold',
+                warning: 'text-yellow-400'
+            };
+            
+            logEl.innerHTML += `<div class="${colors[type] || colors.info}">[${timestamp}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log('[자동정리]', message);
+        }
+
+        async function fixDuplicateAssignments() {
+            log('🚀 자동 중복 배정 정리 시작', 'success');
+            
+            try {
+                // 1단계: 현재 상태 확인
+                log('📊 1단계: 현재 배정 상태 확인 중...');
+                
+                const { data: assignments, error: fetchError } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .eq('student_id', '3127')
+                    .order('assigned_at', { ascending: false });
+
+                if (fetchError) throw fetchError;
+
+                log(`발견된 배정: ${assignments.length}개`);
+                
+                if (assignments.length === 0) {
+                    log('❌ 배정 데이터가 없습니다.', 'error');
+                    return;
+                }
+
+                if (assignments.length === 1) {
+                    log('✅ 이미 중복 배정이 없습니다.', 'success');
+                    log(`현재 배정: ${assignments[0].role_name} (${assignments[0].role_type})`);
+                    showNextSteps(true);
+                    return;
+                }
+
+                // 2단계: 최신 배정 식별
+                log('🎯 2단계: 최신 배정 식별 중...');
+                
+                const latestAssignment = assignments[0]; // 이미 시간순으로 정렬됨
+                const duplicateAssignments = assignments.slice(1);
+
+                log(`✅ 유지할 배정: ${latestAssignment.role_name} (${latestAssignment.role_type})`, 'success');
+                log(`배정 시간: ${new Date(latestAssignment.assigned_at).toLocaleString()}`);
+                log(`❌ 삭제할 배정: ${duplicateAssignments.length}개`, 'warning');
+
+                // 3단계: 중복 배정 삭제
+                log('🗑️ 3단계: 중복 배정 삭제 시작...');
+                
+                let deletedCount = 0;
+                for (const assignment of duplicateAssignments) {
+                    try {
+                        const { error: deleteError } = await supabase
+                            .from('assignments')
+                            .delete()
+                            .eq('id', assignment.id);
+
+                        if (deleteError) throw deleteError;
+                        
+                        deletedCount++;
+                        log(`✅ 삭제 완료: ${assignment.role_name} (ID: ${assignment.id.slice(0, 8)}...)`);
+                        
+                    } catch (error) {
+                        log(`❌ 삭제 실패: ${assignment.role_name} - ${error.message}`, 'error');
+                    }
+                }
+
+                // 4단계: 결과 확인
+                log('🔍 4단계: 결과 확인 중...');
+                
+                const { data: finalCheck, error: checkError } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .eq('student_id', '3127');
+
+                if (checkError) throw checkError;
+
+                log('='.repeat(50), 'success');
+                log('🎉 자동 정리 작업 완료!', 'success');
+                log(`✅ 삭제된 배정: ${deletedCount}개`, 'success');
+                log(`✅ 남은 배정: ${finalCheck.length}개`, 'success');
+                
+                if (finalCheck.length > 0) {
+                    const remaining = finalCheck[0];
+                    log(`📌 최종 배정: ${remaining.role_name} (${remaining.role_type})`, 'success');
+                }
+                
+                log('='.repeat(50), 'success');
+
+                // 다음 단계 표시
+                showNextSteps(true);
+                
+            } catch (error) {
+                log(`❌ 오류 발생: ${error.message}`, 'error');
+                console.error('자동 정리 오류:', error);
+                showNextSteps(false);
+            }
+        }
+
+        function showNextSteps(success) {
+            const nextStepsEl = document.getElementById('nextSteps');
+            
+            if (success) {
+                nextStepsEl.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="text-green-600 font-semibold text-lg">✅ 중복 배정 정리 완료!</div>
+                        <div class="bg-blue-50 p-4 rounded">
+                            <div class="font-semibold mb-2">🎯 다음 단계: 학생페이지 테스트</div>
+                            <div class="space-y-2">
+                                <div>1. 아래 링크로 학생페이지 접속:</div>
+                                <a href="student.html?studentId=3127&studentName=테스트" 
+                                   target="_blank"
+                                   class="block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center">
+                                    👤 3127 학생 페이지로 이동
+                                </a>
+                                <div class="text-sm text-gray-600">
+                                    → 역할배정 카드에 "역할 1"이 표시되는지 확인<br>
+                                    → 플립카드가 정상 작동하는지 확인
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded">
+                            <div class="font-semibold mb-2">🔍 추가 확인 도구:</div>
+                            <a href="debug-database-state.html" 
+                               target="_blank"
+                               class="block bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 text-center">
+                                📊 데이터베이스 상태 재확인
+                            </a>
+                        </div>
+                    </div>
+                `;
+            } else {
+                nextStepsEl.innerHTML = `
+                    <div class="text-red-600">
+                        <div class="font-semibold">❌ 작업 실패</div>
+                        <div>수동으로 중복 배정 정리 도구를 사용해주세요.</div>
+                        <a href="fix-duplicate-assignments.html" 
+                           target="_blank"
+                           class="block bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-center mt-3">
+                            🔧 수동 정리 도구로 이동
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
+        // 페이지 로드 시 자동 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                fixDuplicateAssignments();
+            }, 1500);
+        });
+    </script>
+</body>
+</html>

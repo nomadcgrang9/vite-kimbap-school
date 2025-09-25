@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터베이스 상태 진단</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .data-box {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .json-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6">🔍 데이터베이스 상태 진단</h1>
+        
+        <!-- 연결 상태 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">📡 연결 상태</h2>
+            <div id="connectionStatus" class="text-gray-500">연결 확인 중...</div>
+        </div>
+
+        <!-- 테이블별 데이터 현황 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <!-- Students 테이블 -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-lg font-semibold mb-3">👥 Students</h3>
+                <div id="studentsStatus" class="text-sm text-gray-600 mb-2">확인 중...</div>
+                <div id="studentsData" class="data-box bg-gray-50 p-2 rounded json-display"></div>
+            </div>
+
+            <!-- Sessions 테이블 -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-lg font-semibold mb-3">🎯 Sessions</h3>
+                <div id="sessionsStatus" class="text-sm text-gray-600 mb-2">확인 중...</div>
+                <div id="sessionsData" class="data-box bg-gray-50 p-2 rounded json-display"></div>
+            </div>
+
+            <!-- Assignments 테이블 -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-lg font-semibold mb-3">📋 Assignments</h3>
+                <div id="assignmentsStatus" class="text-sm text-gray-600 mb-2">확인 중...</div>
+                <div id="assignmentsData" class="data-box bg-gray-50 p-2 rounded json-display"></div>
+            </div>
+        </div>
+
+        <!-- 특정 학생 조회 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">🎯 특정 학생 조회</h2>
+            <div class="flex gap-3 mb-4">
+                <input type="text" id="studentIdInput" placeholder="학생 ID (예: 3127)" 
+                       class="border border-gray-300 rounded px-3 py-2 flex-1">
+                <button onclick="checkSpecificStudent()" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    조회
+                </button>
+            </div>
+            <div id="specificStudentResult" class="json-display bg-gray-50 p-3 rounded"></div>
+        </div>
+
+        <!-- 액션 버튼들 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">🔧 진단 액션</h2>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="refreshAllData()" 
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    🔄 전체 새로고침
+                </button>
+                <button onclick="checkTableSchemas()" 
+                        class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                    📊 테이블 스키마 확인
+                </button>
+                <button onclick="testConnection()" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    🌐 연결 테스트
+                </button>
+                <button onclick="downloadBackup()" 
+                        class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                    💾 데이터 백업 다운로드
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/supabase-config.js"></script>
+    <script>
+        let diagnosticData = {
+            connection: null,
+            students: null,
+            sessions: null,
+            assignments: null
+        };
+
+        // 페이지 로드 시 자동 진단 시작
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[진단] 페이지 로드 완료, 진단 시작');
+            setTimeout(() => {
+                initDiagnostic();
+            }, 1000);
+        });
+
+        async function initDiagnostic() {
+            console.log('[진단] 초기 진단 시작');
+            
+            // Supabase 연결 확인
+            await checkConnection();
+            
+            // 전체 데이터 조회
+            await refreshAllData();
+        }
+
+        async function checkConnection() {
+            const status = document.getElementById('connectionStatus');
+            
+            try {
+                if (!supabase) {
+                    throw new Error('Supabase 클라이언트가 초기화되지 않았습니다');
+                }
+
+                // 간단한 연결 테스트 (students 테이블 count)
+                const { count, error } = await supabase
+                    .from('students')
+                    .select('*', { count: 'exact', head: true });
+
+                if (error) throw error;
+
+                diagnosticData.connection = { status: 'connected', count };
+                status.innerHTML = `
+                    <div class="text-green-600 font-semibold">✅ 연결됨</div>
+                    <div class="text-sm">Students 테이블 레코드 수: ${count}</div>
+                `;
+                
+                console.log('[진단] Supabase 연결 성공:', count, '개 학생');
+
+            } catch (error) {
+                console.error('[진단] 연결 오류:', error);
+                diagnosticData.connection = { status: 'error', error: error.message };
+                status.innerHTML = `
+                    <div class="text-red-600 font-semibold">❌ 연결 실패</div>
+                    <div class="text-sm text-red-500">${error.message}</div>
+                `;
+            }
+        }
+
+        async function refreshAllData() {
+            console.log('[진단] 전체 데이터 새로고침 시작');
+            
+            await loadStudentsData();
+            await loadSessionsData();
+            await loadAssignmentsData();
+            
+            console.log('[진단] 전체 데이터 로드 완료');
+        }
+
+        async function loadStudentsData() {
+            const statusEl = document.getElementById('studentsStatus');
+            const dataEl = document.getElementById('studentsData');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('students')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                diagnosticData.students = data;
+                statusEl.innerHTML = `<span class="text-green-600">✅ ${data.length}개 레코드</span>`;
+                dataEl.textContent = JSON.stringify(data, null, 2);
+                
+                console.log('[진단] Students 데이터 로드:', data.length, '개');
+                
+            } catch (error) {
+                console.error('[진단] Students 로드 오류:', error);
+                statusEl.innerHTML = `<span class="text-red-600">❌ 오류: ${error.message}</span>`;
+                dataEl.textContent = `오류: ${error.message}`;
+            }
+        }
+
+        async function loadSessionsData() {
+            const statusEl = document.getElementById('sessionsStatus');
+            const dataEl = document.getElementById('sessionsData');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('sessions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                diagnosticData.sessions = data;
+                statusEl.innerHTML = `<span class="text-green-600">✅ ${data.length}개 레코드</span>`;
+                dataEl.textContent = JSON.stringify(data, null, 2);
+                
+                console.log('[진단] Sessions 데이터 로드:', data.length, '개');
+                
+            } catch (error) {
+                console.error('[진단] Sessions 로드 오류:', error);
+                statusEl.innerHTML = `<span class="text-red-600">❌ 오류: ${error.message}</span>`;
+                dataEl.textContent = `오류: ${error.message}`;
+            }
+        }
+
+        async function loadAssignmentsData() {
+            const statusEl = document.getElementById('assignmentsStatus');
+            const dataEl = document.getElementById('assignmentsData');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .order('assigned_at', { ascending: false });
+
+                if (error) throw error;
+
+                diagnosticData.assignments = data;
+                statusEl.innerHTML = `<span class="text-green-600">✅ ${data.length}개 레코드</span>`;
+                dataEl.textContent = JSON.stringify(data, null, 2);
+                
+                console.log('[진단] Assignments 데이터 로드:', data.length, '개');
+                
+            } catch (error) {
+                console.error('[진단] Assignments 로드 오류:', error);
+                statusEl.innerHTML = `<span class="text-red-600">❌ 오류: ${error.message}</span>`;
+                dataEl.textContent = `오류: ${error.message}`;
+            }
+        }
+
+        async function checkSpecificStudent() {
+            const studentId = document.getElementById('studentIdInput').value.trim();
+            const resultEl = document.getElementById('specificStudentResult');
+            
+            if (!studentId) {
+                resultEl.textContent = '학생 ID를 입력해주세요.';
+                return;
+            }
+
+            try {
+                console.log('[진단] 특정 학생 조회:', studentId);
+                
+                // 학생 정보 조회
+                const { data: student, error: studentError } = await supabase
+                    .from('students')
+                    .select('*')
+                    .eq('student_id', studentId)
+                    .single();
+
+                // 배정 정보 조회
+                const { data: assignments, error: assignmentError } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .eq('student_id', studentId);
+
+                const result = {
+                    studentId: studentId,
+                    student: studentError ? `오류: ${studentError.message}` : student,
+                    assignments: assignmentError ? `오류: ${assignmentError.message}` : assignments,
+                    timestamp: new Date().toISOString()
+                };
+
+                resultEl.textContent = JSON.stringify(result, null, 2);
+                console.log('[진단] 특정 학생 조회 결과:', result);
+                
+            } catch (error) {
+                console.error('[진단] 특정 학생 조회 오류:', error);
+                resultEl.textContent = `오류: ${error.message}`;
+            }
+        }
+
+        async function checkTableSchemas() {
+            try {
+                console.log('[진단] 테이블 스키마 확인 시작');
+                
+                // 각 테이블에서 첫 번째 레코드를 가져와서 스키마 확인
+                const schemas = {};
+                
+                const tables = ['students', 'sessions', 'assignments'];
+                
+                for (const table of tables) {
+                    try {
+                        const { data, error } = await supabase
+                            .from(table)
+                            .select('*')
+                            .limit(1);
+                        
+                        if (error) throw error;
+                        
+                        if (data && data.length > 0) {
+                            schemas[table] = {
+                                fields: Object.keys(data[0]),
+                                sampleRecord: data[0]
+                            };
+                        } else {
+                            schemas[table] = { fields: [], sampleRecord: null, note: '데이터 없음' };
+                        }
+                        
+                    } catch (error) {
+                        schemas[table] = { error: error.message };
+                    }
+                }
+                
+                console.log('[진단] 테이블 스키마:', schemas);
+                alert(`테이블 스키마 정보:\n${JSON.stringify(schemas, null, 2)}`);
+                
+            } catch (error) {
+                console.error('[진단] 스키마 확인 오류:', error);
+                alert(`스키마 확인 오류: ${error.message}`);
+            }
+        }
+
+        async function testConnection() {
+            try {
+                console.log('[진단] 연결 테스트 시작');
+                
+                const start = Date.now();
+                const { data, error } = await supabase
+                    .from('students')
+                    .select('count')
+                    .limit(1);
+                    
+                const end = Date.now();
+                const duration = end - start;
+                
+                if (error) throw error;
+                
+                const message = `연결 테스트 성공!\n응답 시간: ${duration}ms\nTimestamp: ${new Date().toISOString()}`;
+                console.log('[진단] 연결 테스트 성공:', duration, 'ms');
+                alert(message);
+                
+            } catch (error) {
+                console.error('[진단] 연결 테스트 실패:', error);
+                alert(`연결 테스트 실패: ${error.message}`);
+            }
+        }
+
+        async function downloadBackup() {
+            try {
+                console.log('[진단] 백업 다운로드 시작');
+                
+                const backup = {
+                    timestamp: new Date().toISOString(),
+                    diagnosticData: diagnosticData,
+                    rawData: {
+                        students: diagnosticData.students,
+                        sessions: diagnosticData.sessions,
+                        assignments: diagnosticData.assignments
+                    }
+                };
+                
+                const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `database-backup-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                console.log('[진단] 백업 다운로드 완료');
+                
+            } catch (error) {
+                console.error('[진단] 백업 다운로드 오류:', error);
+                alert(`백업 다운로드 오류: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

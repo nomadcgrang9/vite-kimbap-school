@@ -282,6 +282,61 @@
             margin-bottom: 0;
         }
         
+        /* === 오늘의할일 플립카드 스타일 === */
+        .daily-tasks-flip-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .daily-tasks-flip-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        
+        .daily-tasks-flip-card.flipped .daily-tasks-flip-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .daily-tasks-front, .daily-tasks-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        
+        .daily-tasks-front {
+            background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .daily-tasks-back {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transform: rotateY(180deg);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+        
+        /* 플립 힌트 애니메이션 */
+        .daily-tasks-flip-card:hover .daily-tasks-front {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .daily-tasks-flip-card.flipped:hover .daily-tasks-back {
+            transform: rotateY(180deg) scale(1.02);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+        }
+
         /* 공지사항, 선생님말씀 텍스트 크기 조정 */
         .notice-text {
             font-size: 0.9em !important;
@@ -656,59 +711,121 @@
                 </div>
             </div>
 
-            <!-- 3. 오늘의 할일 (중하) -->
+            <!-- 3. 오늘의 할일 → 오늘의 뽑기 (플립 카드) -->
             <div class="grid-item daily-tasks">
-                <div id="taskSection" class="flex flex-col h-full">
-                    <h3 class="font-bold mb-1 text-center" style="font-size: 1.4rem;">📋 오늘의 할일</h3>
-                    
-                    <div class="space-y-1 flex-1 flex flex-col justify-center">
-                        <!-- Stage 1 -->
-                        <div class="border border-blue-200 rounded-md p-1 bg-white shadow-sm hover:shadow-md transition-shadow" id="stage1Card">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-1">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center bg-blue-100" id="stage1Icon">
-                                        <span style="font-size: 1.2rem;">🍙</span>
+                <!-- 플립 카드 컨테이너 -->
+                <div class="daily-tasks-flip-card" id="dailyTasksFlipCard" onclick="console.log('🚨 CLICK EVENT 확인!'); toggleDailyTasksCard()">
+                    <div class="daily-tasks-flip-inner">
+                        
+                        <!-- 앞면: 오늘의 할일 -->
+                        <div class="daily-tasks-front">
+                            <div id="taskSection" class="flex flex-col h-full">
+                                <h3 class="font-bold mb-1 text-center" style="font-size: 1.4rem;">📋 오늘의 할일</h3>
+                                
+                                <div class="space-y-1 flex-1 flex flex-col justify-center">
+                                    <!-- Stage 1 -->
+                                    <div class="border border-blue-200 rounded-md p-1 bg-white shadow-sm hover:shadow-md transition-shadow" id="stage1Card">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-1">
+                                                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-blue-100" id="stage1Icon">
+                                                    <span style="font-size: 1.2rem;">🍙</span>
+                                                </div>
+                                                <div>
+                                                    <h4 class="font-bold text-gray-800" style="font-size: 0.6rem;">1단계: 김밥말기</h4>
+                                                    <p class="text-gray-600" style="font-size: 0.5rem;">김밥을 말아보세요 (+1포인트)</p>
+                                                </div>
+                                            </div>
+                                            <button onclick="completeStage(1); event.stopPropagation();" id="stage1Btn" class="px-2 py-1 rounded text-xs font-medium transition-colors" style="min-width: 3rem;">시작</button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 class="font-bold text-gray-800" style="font-size: 0.6rem;">1단계: 김밥말기</h4>
-                                        <p class="text-gray-600" style="font-size: 0.5rem;">김밥을 말아보세요 (+1포인트)</p>
-                                    </div>
-                                </div>
-                                <button onclick="completeStage(1)" id="stage1Btn" class="px-2 py-1 rounded text-xs font-medium transition-colors" style="min-width: 3rem;">시작</button>
-                            </div>
-                        </div>
 
-                        <!-- Stage 2 -->
-                        <div class="border border-blue-200 rounded-md p-1 bg-white shadow-sm hover:shadow-md transition-shadow" id="stage2Card">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-1">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center bg-green-100" id="stage2Icon">
-                                        <span style="font-size: 1.2rem;">✨</span>
+                                    <!-- Stage 2 -->
+                                    <div class="border border-blue-200 rounded-md p-1 bg-white shadow-sm hover:shadow-md transition-shadow" id="stage2Card">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-1">
+                                                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-green-100" id="stage2Icon">
+                                                    <span style="font-size: 1.2rem;">✨</span>
+                                                </div>
+                                                <div>
+                                                    <h4 class="font-bold text-gray-800" style="font-size: 0.6rem;">2단계: 김밥썰기</h4>
+                                                    <p class="text-gray-600" style="font-size: 0.5rem;">김밥을 예쁘게 썰어보세요 (+1포인트)</p>
+                                                </div>
+                                            </div>
+                                            <button onclick="completeStage(2); event.stopPropagation();" id="stage2Btn" class="px-2 py-1 rounded text-xs font-medium transition-colors" style="min-width: 3rem;">잠금</button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 class="font-bold text-gray-800" style="font-size: 0.6rem;">2단계: 김밥썰기</h4>
-                                        <p class="text-gray-600" style="font-size: 0.5rem;">김밥을 예쁘게 썰어보세요 (+1포인트)</p>
-                                    </div>
-                                </div>
-                                <button onclick="completeStage(2)" id="stage2Btn" class="px-2 py-1 rounded text-xs font-medium transition-colors" style="min-width: 3rem;">잠금</button>
-                            </div>
-                        </div>
 
-                        <!-- Stage 3 -->
-                        <div class="border border-blue-200 rounded-md p-1 bg-white shadow-sm hover:shadow-md transition-shadow" id="stage3Card">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-1">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100" id="stage3Icon">
-                                        <span style="font-size: 1.2rem;">➕</span>
-                                    </div>
-                                    <div>
-                                        <h4 class="font-bold text-gray-800" style="font-size: 0.6rem;">3단계: 김밥추가</h4>
-                                        <p class="text-gray-600" style="font-size: 0.5rem;">더 많은 김밥을 만들어보세요 (+1포인트)</p>
+                                    <!-- Stage 3 -->
+                                    <div class="border border-blue-200 rounded-md p-1 bg-white shadow-sm hover:shadow-md transition-shadow" id="stage3Card">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-1">
+                                                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100" id="stage3Icon">
+                                                    <span style="font-size: 1.2rem;">➕</span>
+                                                </div>
+                                                <div>
+                                                    <h4 class="font-bold text-gray-800" style="font-size: 0.6rem;">3단계: 김밥추가</h4>
+                                                    <p class="text-gray-600" style="font-size: 0.5rem;">더 많은 김밥을 만들어보세요 (+1포인트)</p>
+                                                </div>
+                                            </div>
+                                            <button onclick="completeStage(3); event.stopPropagation();" id="stage3Btn" class="px-2 py-1 rounded text-xs font-medium transition-colors" style="min-width: 3rem;">잠금</button>
+                                        </div>
                                     </div>
                                 </div>
-                                <button onclick="completeStage(3)" id="stage3Btn" class="px-2 py-1 rounded text-xs font-medium transition-colors" style="min-width: 3rem;">잠금</button>
+                                
+                                <!-- 플립 힌트 (2단계 완료시에만 표시) -->
+                                <div id="flipHint" class="hidden text-center mt-2">
+                                    <p class="text-xs text-purple-600 animate-pulse">
+                                        🎁 클릭하여 오늘의 뽑기 하기!
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                        
+                        <!-- 뒷면: 오늘의 뽑기 -->
+                        <div class="daily-tasks-back">
+                            <div class="flex flex-col h-full justify-center items-center text-center p-4">
+                                <div id="luckyDrawContent">
+                                    <!-- 뽑기 사용 가능 상태 -->
+                                    <div id="luckyDrawAvailable" class="hidden">
+                                        <h3 class="text-2xl font-bold text-white mb-4">🎁 오늘의 뽑기</h3>
+                                        <div class="mb-6">
+                                            <div class="text-6xl mb-4">🎰</div>
+                                            <p class="text-white text-lg mb-2">2단계를 완료했습니다!</p>
+                                            <p class="text-purple-200 text-sm mb-4">특별한 선물을 받아보세요</p>
+                                        </div>
+                                        <button onclick="performLuckyDraw(); event.stopPropagation();" 
+                                                class="bg-white bg-opacity-20 backdrop-blur text-white py-3 px-6 rounded-lg hover:bg-opacity-30 transition text-lg font-bold border-2 border-white border-opacity-40 shadow-lg">
+                                            🎲 뽑기 하기!
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- 조건 미충족 상태 -->
+                                    <div id="luckyDrawUnavailable">
+                                        <h3 class="text-xl font-bold text-white mb-4">🔒 오늘의 뽑기</h3>
+                                        <div class="mb-6">
+                                            <div class="text-4xl mb-4 opacity-50">🎰</div>
+                                            <p class="text-white text-base mb-2">2단계를 먼저 완료해주세요!</p>
+                                            <p class="text-purple-200 text-sm">완료 후 특별한 선물을 받을 수 있어요</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 이미 뽑기 완료 상태 -->
+                                    <div id="luckyDrawCompleted" class="hidden">
+                                        <h3 class="text-xl font-bold text-white mb-4">✅ 뽑기 완료</h3>
+                                        <div class="mb-6">
+                                            <div class="text-4xl mb-4">🎁</div>
+                                            <p class="text-white text-base mb-2">오늘 이미 뽑기를 했습니다</p>
+                                            <p class="text-purple-200 text-sm">내일 다시 도전해보세요!</p>
+                                        </div>
+                                        <div id="todayDrawResult" class="bg-white bg-opacity-20 rounded-lg p-3 mt-4">
+                                            <p class="text-white font-bold">오늘의 결과:</p>
+                                            <p class="text-yellow-200 text-lg" id="todayDrawMessage">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -968,6 +1085,10 @@
     <script src="static/student.js"></script>
     <script src="static/student-stage-settings.js"></script>
     <!-- Simple Point System (2025-01-19) - 모든 포인트 기능 대체 및 문제 차단 -->
+    <script>
+        console.log('🚀 [HTML] JavaScript 파일들 로드 완료!');
+        console.log('🔍 [HTML] toggleDailyTasksCard 함수 확인:', typeof window.toggleDailyTasksCard);
+    </script>
     <script>
         // student.js 로드 직후 즉시 문제 함수 차단
         window.checkForNewTeacherPoints = function() { return; };

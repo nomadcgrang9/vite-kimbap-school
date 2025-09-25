@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>단계별 내용 관리 - 오늘의 할일</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .stage-preview {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        .stage-preview:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .icon-selector {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .icon-option {
+            padding: 0.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.5rem;
+        }
+        .icon-option:hover {
+            border-color: #3b82f6;
+            background-color: #dbeafe;
+        }
+        .icon-option.selected {
+            border-color: #1d4ed8;
+            background-color: #3b82f6;
+            color: white;
+        }
+        .save-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .save-button:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    
+    <!-- 헤더 -->
+    <div class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-tasks text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">단계별 내용 관리</h1>
+                        <p class="text-sm opacity-90">학생페이지 "오늘의 할일" 단계 제목, 설명, 아이콘 수정</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="admin-v2.html" class="text-white hover:text-yellow-300 transition text-sm">
+                        <i class="fas fa-arrow-left mr-2"></i>관리자 메인으로
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="container mx-auto px-4 py-8">
+        
+        <!-- 설명 카드 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-start space-x-4">
+                <div class="bg-blue-100 rounded-full p-3">
+                    <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">사용 안내</h2>
+                    <p class="text-gray-600 mb-2">
+                        이 페이지에서는 학생 페이지의 <strong>"오늘의 할일"</strong> 카드에 표시되는 3단계의 내용을 수정할 수 있습니다.
+                    </p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>• <strong>제목</strong>: "1단계", "2단계", "3단계"의 굵은 글씨 부분</li>
+                        <li>• <strong>설명</strong>: 제목 아래에 표시되는 설명 텍스트</li>
+                        <li>• <strong>아이콘</strong>: 각 단계 옆에 표시되는 이모지</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 단계 설정 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            
+            <!-- 1단계 설정 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-circle text-blue-500 mr-2"></i>1단계 설정
+                    </h3>
+                </div>
+                
+                <!-- 미리보기 -->
+                <div class="stage-preview mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center bg-blue-100">
+                                <span id="stage1-preview-icon" style="font-size: 1.2rem;">🍙</span>
+                            </div>
+                            <div>
+                                <h4 id="stage1-preview-title" class="font-bold text-gray-800" style="font-size: 0.6rem;">1단계: 김밥말기</h4>
+                                <p id="stage1-preview-desc" class="text-gray-600" style="font-size: 0.5rem;">김밥을 말아보세요 (+1포인트)</p>
+                            </div>
+                        </div>
+                        <button class="px-2 py-1 rounded text-xs font-medium bg-blue-500 text-white" style="min-width: 3rem;">시작</button>
+                    </div>
+                </div>
+                
+                <!-- 입력 폼 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">제목</label>
+                        <input type="text" id="stage1-title" 
+                               value="1단계: 김밥말기"
+                               placeholder="예: 1단계: 김밥말기" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">설명</label>
+                        <textarea id="stage1-desc" 
+                                  rows="3" 
+                                  placeholder="예: 김밥을 말아보세요 (+1포인트)"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">김밥을 말아보세요 (+1포인트)</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">아이콘 선택</label>
+                        <div class="icon-selector" id="stage1-icons">
+                            <!-- 아이콘 옵션들이 여기에 동적 생성됩니다 -->
+                        </div>
+                        <input type="hidden" id="stage1-icon" value="🍙">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2단계 설정 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-circle text-green-500 mr-2"></i>2단계 설정
+                    </h3>
+                </div>
+                
+                <!-- 미리보기 -->
+                <div class="stage-preview mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center bg-green-100">
+                                <span id="stage2-preview-icon" style="font-size: 1.2rem;">🔪</span>
+                            </div>
+                            <div>
+                                <h4 id="stage2-preview-title" class="font-bold text-gray-800" style="font-size: 0.6rem;">2단계: 김밥썰기</h4>
+                                <p id="stage2-preview-desc" class="text-gray-600" style="font-size: 0.5rem;">김밥을 예쁘게 썰어보세요 (+1포인트)</p>
+                            </div>
+                        </div>
+                        <button class="px-2 py-1 rounded text-xs font-medium bg-gray-300 text-gray-600" style="min-width: 3rem;">잠금</button>
+                    </div>
+                </div>
+                
+                <!-- 입력 폼 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">제목</label>
+                        <input type="text" id="stage2-title" 
+                               value="2단계: 김밥썰기"
+                               placeholder="예: 2단계: 김밥썰기" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">설명</label>
+                        <textarea id="stage2-desc" 
+                                  rows="3" 
+                                  placeholder="예: 김밥을 예쁘게 썰어보세요 (+1포인트)"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">김밥을 예쁘게 썰어보세요 (+1포인트)</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">아이콘 선택</label>
+                        <div class="icon-selector" id="stage2-icons">
+                            <!-- 아이콘 옵션들이 여기에 동적 생성됩니다 -->
+                        </div>
+                        <input type="hidden" id="stage2-icon" value="🔪">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3단계 설정 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-circle text-purple-500 mr-2"></i>3단계 설정
+                    </h3>
+                </div>
+                
+                <!-- 미리보기 -->
+                <div class="stage-preview mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100">
+                                <span id="stage3-preview-icon" style="font-size: 1.2rem;">➕</span>
+                            </div>
+                            <div>
+                                <h4 id="stage3-preview-title" class="font-bold text-gray-800" style="font-size: 0.6rem;">3단계: 김밥추가</h4>
+                                <p id="stage3-preview-desc" class="text-gray-600" style="font-size: 0.5rem;">더 많은 김밥을 만들어보세요 (+1포인트)</p>
+                            </div>
+                        </div>
+                        <button class="px-2 py-1 rounded text-xs font-medium bg-gray-300 text-gray-600" style="min-width: 3rem;">잠금</button>
+                    </div>
+                </div>
+                
+                <!-- 입력 폼 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">제목</label>
+                        <input type="text" id="stage3-title" 
+                               value="3단계: 김밥추가"
+                               placeholder="예: 3단계: 김밥추가" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">설명</label>
+                        <textarea id="stage3-desc" 
+                                  rows="3" 
+                                  placeholder="예: 더 많은 김밥을 만들어보세요 (+1포인트)"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">더 많은 김밥을 만들어보세요 (+1포인트)</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">아이콘 선택</label>
+                        <div class="icon-selector" id="stage3-icons">
+                            <!-- 아이콘 옵션들이 여기에 동적 생성됩니다 -->
+                        </div>
+                        <input type="hidden" id="stage3-icon" value="➕">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 저장 버튼 -->
+        <div class="text-center">
+            <button onclick="saveAllStages()" 
+                    class="save-button text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                <i class="fas fa-save mr-2"></i>모든 단계 저장
+            </button>
+        </div>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-white rounded-lg p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p class="text-gray-700">저장 중입니다...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 성공 모달 -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-5xl text-green-500 mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">저장 완료!</h3>
+                    <p class="text-gray-600 mb-6">모든 단계 설정이 성공적으로 저장되었습니다.<br>학생 페이지에서 변경사항이 실시간으로 반영됩니다.</p>
+                    <button onclick="closeSuccessModal()" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition">
+                        확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 에러 모달 -->
+    <div id="errorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">저장 실패</h3>
+                    <p class="text-gray-600 mb-6" id="errorMessage">오류가 발생했습니다. 다시 시도해주세요.</p>
+                    <button onclick="closeErrorModal()" class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition">
+                        확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="static/supabase-config.js"></script>
+    <script src="static/api-wrapper.js"></script>
+    <script src="static/admin-stage-content.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+name = "webapp"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages Functions 설정
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "webapp-production"
+database_id = "8eb5bb1b-9160-4c9e-970e-eb765fe23054"

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중복 배정 정리</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6">🔧 중복 배정 정리</h1>
+        
+        <!-- 현재 상태 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">📊 현재 중복 배정 상태</h2>
+            <div id="currentState" class="text-gray-500">확인 중...</div>
+        </div>
+
+        <!-- 정리 옵션 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">⚙️ 정리 옵션</h2>
+            <div class="space-y-3">
+                <button onclick="keepLatestOnly()" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full">
+                    📝 최신 배정만 유지 (가장 최근 것 1개만 남김)
+                </button>
+                <button onclick="keepImageRoleOnly()" 
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full">
+                    🖼️ 이미지 역할만 유지 (role_type='image'인 것만 남김)
+                </button>
+                <button onclick="deleteAllAssignments()" 
+                        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full">
+                    🗑️ 모든 배정 삭제 (완전 초기화)
+                </button>
+                <button onclick="keepSpecificRole()" 
+                        class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 w-full">
+                    🎯 특정 역할만 유지 (수동 선택)
+                </button>
+            </div>
+        </div>
+
+        <!-- 작업 로그 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">📋 작업 로그</h2>
+            <div id="workLog" class="bg-gray-50 p-3 rounded text-sm font-mono h-40 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script src="static/supabase-config.js"></script>
+    <script>
+        let allAssignments = [];
+
+        // 페이지 로드 시 현재 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                checkCurrentState();
+            }, 1000);
+        });
+
+        function log(message) {
+            const logEl = document.getElementById('workLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log('[정리]', message);
+        }
+
+        async function checkCurrentState() {
+            log('현재 배정 상태 확인 중...');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .eq('student_id', '3127')
+                    .order('assigned_at', { ascending: false });
+
+                if (error) throw error;
+
+                allAssignments = data;
+                
+                const stateEl = document.getElementById('currentState');
+                stateEl.innerHTML = `
+                    <div class="mb-4">
+                        <strong>학생 3127의 배정 현황:</strong>
+                        <div class="text-lg font-semibold text-red-600">${data.length}개의 중복 배정 발견</div>
+                    </div>
+                    <div class="space-y-2">
+                        ${data.map((assignment, index) => `
+                            <div class="border-l-4 border-blue-500 pl-3 py-2 bg-gray-50">
+                                <div class="font-semibold">${index + 1}. ${assignment.role_name}</div>
+                                <div class="text-sm text-gray-600">
+                                    타입: ${assignment.role_type} | 
+                                    배정 시간: ${new Date(assignment.assigned_at).toLocaleString()}
+                                </div>
+                                <div class="text-xs text-gray-500">ID: ${assignment.id}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                log(`${data.length}개의 중복 배정 발견`);
+                
+            } catch (error) {
+                log(`오류 발생: ${error.message}`);
+                console.error('상태 확인 오류:', error);
+            }
+        }
+
+        async function keepLatestOnly() {
+            log('최신 배정만 유지하는 작업 시작...');
+            
+            try {
+                if (allAssignments.length === 0) {
+                    log('배정 데이터가 없습니다.');
+                    return;
+                }
+
+                // 가장 최신 배정 1개 선택
+                const latestAssignment = allAssignments[0]; // 이미 시간순으로 정렬됨
+                const toDelete = allAssignments.slice(1); // 나머지는 삭제
+
+                log(`유지할 배정: ${latestAssignment.role_name} (${latestAssignment.role_type})`);
+                log(`삭제할 배정: ${toDelete.length}개`);
+
+                // 나머지 배정들 삭제
+                for (const assignment of toDelete) {
+                    const { error } = await supabase
+                        .from('assignments')
+                        .delete()
+                        .eq('id', assignment.id);
+
+                    if (error) throw error;
+                    log(`삭제 완료: ${assignment.role_name}`);
+                }
+
+                log(`✅ 작업 완료! ${latestAssignment.role_name}만 유지됨`);
+                
+                // 상태 새로고침
+                await checkCurrentState();
+                
+            } catch (error) {
+                log(`❌ 오류 발생: ${error.message}`);
+                console.error('작업 오류:', error);
+            }
+        }
+
+        async function keepImageRoleOnly() {
+            log('이미지 역할만 유지하는 작업 시작...');
+            
+            try {
+                const imageAssignments = allAssignments.filter(a => a.role_type === 'image');
+                const nonImageAssignments = allAssignments.filter(a => a.role_type !== 'image');
+
+                if (imageAssignments.length === 0) {
+                    log('❌ 이미지 역할이 없습니다.');
+                    return;
+                }
+
+                // 최신 이미지 역할 1개만 유지
+                const keepAssignment = imageAssignments[0];
+                const toDelete = [...imageAssignments.slice(1), ...nonImageAssignments];
+
+                log(`유지할 배정: ${keepAssignment.role_name} (이미지)`);
+                log(`삭제할 배정: ${toDelete.length}개`);
+
+                // 나머지 삭제
+                for (const assignment of toDelete) {
+                    const { error } = await supabase
+                        .from('assignments')
+                        .delete()
+                        .eq('id', assignment.id);
+
+                    if (error) throw error;
+                    log(`삭제 완료: ${assignment.role_name}`);
+                }
+
+                log(`✅ 작업 완료! 이미지 역할만 유지됨`);
+                
+                // 상태 새로고침
+                await checkCurrentState();
+                
+            } catch (error) {
+                log(`❌ 오류 발생: ${error.message}`);
+                console.error('작업 오류:', error);
+            }
+        }
+
+        async function deleteAllAssignments() {
+            if (!confirm('정말로 모든 배정을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            log('모든 배정 삭제 작업 시작...');
+            
+            try {
+                const { error } = await supabase
+                    .from('assignments')
+                    .delete()
+                    .eq('student_id', '3127');
+
+                if (error) throw error;
+
+                log(`✅ 모든 배정 삭제 완료 (${allAssignments.length}개)`);
+                
+                // 상태 새로고침
+                await checkCurrentState();
+                
+            } catch (error) {
+                log(`❌ 오류 발생: ${error.message}`);
+                console.error('삭제 오류:', error);
+            }
+        }
+
+        async function keepSpecificRole() {
+            if (allAssignments.length === 0) {
+                log('배정 데이터가 없습니다.');
+                return;
+            }
+
+            // 사용자에게 선택 옵션 제시
+            const options = allAssignments.map((assignment, index) => 
+                `${index}: ${assignment.role_name} (${assignment.role_type}) - ${new Date(assignment.assigned_at).toLocaleString()}`
+            ).join('\n');
+
+            const choice = prompt(`유지할 배정을 선택하세요 (번호 입력):\n${options}`);
+            
+            if (choice === null) return; // 취소
+            
+            const choiceIndex = parseInt(choice);
+            if (isNaN(choiceIndex) || choiceIndex < 0 || choiceIndex >= allAssignments.length) {
+                alert('잘못된 선택입니다.');
+                return;
+            }
+
+            log(`특정 역할 유지 작업 시작: ${allAssignments[choiceIndex].role_name}`);
+            
+            try {
+                const keepAssignment = allAssignments[choiceIndex];
+                const toDelete = allAssignments.filter((_, index) => index !== choiceIndex);
+
+                log(`유지할 배정: ${keepAssignment.role_name}`);
+                log(`삭제할 배정: ${toDelete.length}개`);
+
+                // 나머지 삭제
+                for (const assignment of toDelete) {
+                    const { error } = await supabase
+                        .from('assignments')
+                        .delete()
+                        .eq('id', assignment.id);
+
+                    if (error) throw error;
+                    log(`삭제 완료: ${assignment.role_name}`);
+                }
+
+                log(`✅ 작업 완료! ${keepAssignment.role_name}만 유지됨`);
+                
+                // 상태 새로고침
+                await checkCurrentState();
+                
+            } catch (error) {
+                log(`❌ 오류 발생: ${error.message}`);
+                console.error('작업 오류:', error);
+            }
+        }
+    </script>
+</body>
+</html>
